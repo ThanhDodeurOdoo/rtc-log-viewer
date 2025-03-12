@@ -9,8 +9,8 @@ export class Main extends Component {
     static template = xml`
         <div id="main" class="rtc-log-viewer">
             <div class="file-upload-container">
-                <h2>RTC Log Viewer</h2>
                 <p>Upload a JSON log file to analyze the RTC connection data</p>
+                <p>Refer to <a href="https://www.odoo.com/knowledge/article/28833">this article</a> for more information on how to enable RTC logging in Odoo</p>
                 <div class="file-input">
                     <input type="file" accept=".json" t-on-change="onFileChange"/>
                     <button t-on-click="triggerFileInput">Choose File</button>
