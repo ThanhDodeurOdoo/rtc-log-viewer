@@ -2,9 +2,8 @@ const { Component, xml, useState } = owl;
 import { LogViewer } from './log_viewer.js';
 import { TimelineViewer } from './timeline_viewer.js';
 import { SnapshotViewer } from './snapshot_viewer.js';
-import { SessionTimeline } from './session_timeline.js';
-import { LogDetails } from './log_details.js';
 import helpers from './utils/helpers.js';
+import { NoData } from './common/ui_components.js';
 
 export class Main extends Component {
     static template = xml`
@@ -61,9 +60,10 @@ export class Main extends Component {
                         <h3>Call Timelines</h3>
                         <p class="view-description">Each timeline represents a sequence of events for a specific call session.</p>
                         
-                        <div t-if="!timelineKeys.length" class="no-data">
-                            No timeline data available in this log file
-                        </div>
+                        <NoData 
+                            t-if="!timelineKeys.length" 
+                            message="'No timeline data available in this log file'"
+                        />
                         
                         <div t-else="" class="timeline-list">
                             <div 
@@ -79,16 +79,6 @@ export class Main extends Component {
                                     selectedSession="state.selectedSession"
                                 />
                             </div>
-                            
-                            <div t-if="state.selectedTimeline and state.selectedSession" class="session-details-container">
-                                <LogDetails 
-                                    sessionData="state.logs.timelines[state.selectedTimeline]"
-                                    selectedSession="state.selectedSession"
-                                    snapshots="snapshotKeys"
-                                    selectedSnapshot="state.selectedSnapshot"
-                                    onSnapshotSelect="(snapshotId) => this.selectSnapshot(snapshotId)"
-                                />
-                            </div>
                         </div>
                     </div>
                     
@@ -97,9 +87,10 @@ export class Main extends Component {
                         <h3>Connection Snapshots</h3>
                         <p class="view-description">Each snapshot shows the complete state of all sessions at a specific moment.</p>
                         
-                        <div t-if="!snapshotKeys.length" class="no-data">
-                            No snapshot data available in this log file
-                        </div>
+                        <NoData 
+                            t-if="!snapshotKeys.length" 
+                            message="'No snapshot data available in this log file'"
+                        />
                         
                         <div t-else="" class="snapshot-list">
                             <div 
@@ -115,45 +106,7 @@ export class Main extends Component {
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Session Timeline View -->
-                    <div t-if="state.activeView === 'session-timeline'" class="session-timeline-container">
-                        <h3>Session Timeline View</h3>
-                        <p class="view-description">Visualize the timeline of events for a specific session.</p>
-                        
-                        <div t-if="!timelineKeys.length" class="no-data">
-                            No timeline data available in this log file
-                        </div>
-                        
-                        <div t-else="">
-                            <div class="session-selector">
-                                <label for="timeline-select">Select Timeline:</label>
-                                <select id="timeline-select" t-on-change="onTimelineSelect">
-                                    <option value="">-- Select a timeline --</option>
-                                    <option t-foreach="timelineKeys" t-as="key" t-key="key" t-att-value="key" t-esc="helpers.formatTime(key)"></option>
-                                </select>
-                                
-                                <t t-if="state.selectedTimeline">
-                                    <label for="session-select">Select Session:</label>
-                                    <select id="session-select" t-on-change="onSessionSelect">
-                                        <option value="">-- Select a session --</option>
-                                        <option t-foreach="availableSessions" t-as="session" t-key="session" t-att-value="session" t-esc="'Session ' + session"></option>
-                                    </select>
-                                </t>
-                            </div>
-                            
-                            <div t-if="state.selectedTimeline and state.selectedSession" class="session-timeline-view">
-                                <SessionTimeline 
-                                    session="state.selectedSession"
-                                    sessionData="state.logs.timelines[state.selectedTimeline]"
-                                    snapshots="snapshotKeysForTimeline"
-                                    selectedSnapshot="state.selectedSnapshot"
-                                    onSnapshotSelect="(snapshotId) => this.selectSnapshot(snapshotId)"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    
+
                     <!-- Raw Data View -->
                     <div t-if="state.activeView === 'raw'" class="raw-data-container">
                         <h3>Raw Log Data</h3>
@@ -166,7 +119,12 @@ export class Main extends Component {
         </div>
     `;
 
-    static components = { LogViewer, TimelineViewer, SnapshotViewer, SessionTimeline, LogDetails };
+    static components = {
+        LogViewer,
+        TimelineViewer,
+        SnapshotViewer,
+        NoData,
+    };
 
     setup() {
         this.state = useState({
@@ -181,7 +139,6 @@ export class Main extends Component {
         this.viewOptions = [
             { id: 'timelines', label: 'Timelines' },
             { id: 'snapshots', label: 'Snapshots' },
-            { id: 'session-timeline', label: 'Session Timeline' },
             { id: 'raw', label: 'Raw Data' }
         ];
         this.helpers = helpers;

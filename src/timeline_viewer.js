@@ -1,5 +1,6 @@
 const { Component, xml, useState } = owl;
 import helpers from './utils/helpers.js';
+import { ConnectionState, EventList } from './common/ui_components.js';
 
 export class TimelineViewer extends Component {
     static template = xml`
@@ -38,37 +39,30 @@ export class TimelineViewer extends Component {
                     </div>
                     
                     <!-- Connection state -->
-                    <div t-if="activeSessionInfo.state" class="connection-state">
-                        <div t-attf-class="state-indicator {{ getStateClass(activeSessionInfo.state) }}"></div>
-                        <span class="property-name">Connection State:</span>
-                        <span class="state-value" t-esc="activeSessionInfo.state"></span>
-                    </div>
+                    <ConnectionState 
+                        t-if="activeSessionInfo.state" 
+                        state="activeSessionInfo.state" 
+                        stateClass="helpers.getConnectionStateClass(activeSessionInfo.state)" 
+                        label="'Connection State:'"
+                    />
                     
                     <!-- Events log -->
                     <div class="events-log">
                         <h5>Events</h5>
-                        <div class="event-list">
-                            <div t-if="!sessionEvents.length" class="no-data">
-                                No events recorded for this session
-                            </div>
-                            <div t-else="" class="event-items">
-                                <div 
-                                    t-foreach="sessionEvents" 
-                                    t-as="event" 
-                                    t-key="event_index"
-                                    t-attf-class="event-item {{ event.level ? event.level : '' }}"
-                                >
-                                    <span class="event-time" t-esc="helpers.formatEventTime(event)"></span>
-                                    <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-esc="event.level"></span>
-                                    <span class="event-text" t-esc="helpers.formatEventText(event)"></span>
-                                </div>
-                            </div>
-                        </div>
+                        <EventList 
+                            events="sessionEvents" 
+                            noDataMessage="'No events recorded for this session'"
+                        />
                     </div>
                 </div>
             </div>
         </div>
     `;
+
+    static components = {
+        ConnectionState,
+        EventList
+    };
 
     setup() {
         this.state = useState({
@@ -136,13 +130,4 @@ export class TimelineViewer extends Component {
         if (!this.props.timelineData) return false;
         return sessionId === this.props.timelineData.selfSessionId?.toString();
     }
-
-    getStateClass(state) {
-        if (!state) return '';
-
-        if (state.includes('connected')) return 'connected';
-        if (state.includes('connecting')) return 'connecting';
-        return 'disconnected';
-    }
-
 }

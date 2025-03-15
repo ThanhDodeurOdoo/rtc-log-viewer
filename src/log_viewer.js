@@ -1,7 +1,15 @@
 const { Component, xml, useState } = owl;
 import helpers from './utils/helpers.js';
+import { NoData, EventList, ConnectionState, SessionProperties } from './common/ui_components.js';
 
 export class LogViewer extends Component {
+    static components = {
+        NoData,
+        EventList,
+        ConnectionState,
+        SessionProperties
+    };
+
     static template = xml`
         <div class="log-viewer">
             <div class="log-viewer-header">
@@ -25,9 +33,10 @@ export class LogViewer extends Component {
                     <h4>Timeline View</h4>
                     <p class="description">View events over time for all sessions in the call.</p>
                     
-                    <div t-if="!timelineKeys.length" class="no-data">
-                        No timeline data available
-                    </div>
+                    <NoData 
+                        t-if="!timelineKeys.length" 
+                        message="'No timeline data available'"
+                    />
                     
                     <div t-else="" class="timeline-selector">
                         <label for="timeline-select">Select Timeline:</label>
@@ -55,23 +64,10 @@ export class LogViewer extends Component {
                             
                             <div t-if="state.selectedSession" class="session-events">
                                 <h4>Events for Session <t t-esc="state.selectedSession" /></h4>
-                                <div class="event-list">
-                                    <div t-if="!sessionEvents.length" class="no-data">
-                                        No events found for this session
-                                    </div>
-                                    <div t-else="" class="event-items">
-                                        <div 
-                                            t-foreach="sessionEvents" 
-                                            t-as="event" 
-                                            t-key="event_index"
-                                            t-attf-class="event-item {{ event.level ? event.level : '' }}"
-                                        >
-                                            <span class="event-time" t-esc="helpers.formatEventTime(event)"></span>
-                                            <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-esc="event.level"></span>
-                                            <span class="event-text" t-esc="helpers.formatEventText(event)"></span>
-                                        </div>
-                                    </div>
-                                </div>
+                                <EventList 
+                                    events="sessionEvents"
+                                    noDataMessage="'No events found for this session'"
+                                />
                             </div>
                         </div>
                     </div>
@@ -82,9 +78,10 @@ export class LogViewer extends Component {
                     <h4>Session View</h4>
                     <p class="description">Examine the details of specific sessions from snapshots.</p>
                     
-                    <div t-if="!snapshotKeys.length" class="no-data">
-                        No snapshot data available
-                    </div>
+                    <NoData 
+                        t-if="!snapshotKeys.length" 
+                        message="'No snapshot data available'"
+                    />
                     
                     <div t-else="" class="snapshot-selector">
                         <label for="snapshot-select">Select Snapshot:</label>
@@ -95,9 +92,10 @@ export class LogViewer extends Component {
                         
                         <div t-if="state.selectedSnapshot" class="snapshot-sessions">
                             <h4>Sessions in Snapshot</h4>
-                            <div t-if="!snapshotSessions.length" class="no-data">
-                                No sessions found in this snapshot
-                            </div>
+                            <NoData 
+                                t-if="!snapshotSessions.length" 
+                                message="'No sessions found in this snapshot'"
+                            />
                             <div t-else="" class="session-list">
                                 <div 
                                     t-foreach="snapshotSessions" 
@@ -119,42 +117,12 @@ export class LogViewer extends Component {
                                     </div>
                                     
                                     <div t-if="state.expandedSessions[session.id]" class="session-details">
-                                        <div class="connection-state">
-                                            <div t-attf-class="state-indicator {{ getSessionStateClass(session) }}"></div>
-                                            <span class="property-name">State:</span>
-                                            <span class="property-value" t-esc="session.state || 'Unknown'"></span>
-                                        </div>
+                                        <ConnectionState 
+                                            state="session.state || 'Unknown'"
+                                            stateClass="helpers.getSessionStateClass(session)"
+                                        />
                                         
-                                        <div class="session-properties">
-                                            <!-- Display session details here -->
-                                            <div t-if="session.audio" class="property-card">
-                                                <h6>Audio</h6>
-                                                <ul class="property-list">
-                                                    <li><span class="property-name">State:</span> <span t-esc="getAudioState(session.audio.state)"></span></li>
-                                                    <li><span class="property-name">Muted:</span> <span t-esc="session.audio.muted ? 'Yes' : 'No'"></span></li>
-                                                    <li><span class="property-name">Paused:</span> <span t-esc="session.audio.paused ? 'Yes' : 'No'"></span></li>
-                                                </ul>
-                                            </div>
-                                            
-                                            <div t-if="session.peer" class="property-card">
-                                                <h6>Peer Connection</h6>
-                                                <ul class="property-list">
-                                                    <li><span class="property-name">ID:</span> <span t-esc="session.peer.id"></span></li>
-                                                    <li><span class="property-name">State:</span> <span t-esc="session.peer.state"></span></li>
-                                                    <li><span class="property-name">ICE State:</span> <span t-esc="session.peer.iceState"></span></li>
-                                                </ul>
-                                            </div>
-                                            
-                                            <div t-if="session.sfuConsumers and session.sfuConsumers.length > 0" class="property-card">
-                                                <h6>SFU Consumers</h6>
-                                                <ul class="property-list">
-                                                    <li t-foreach="session.sfuConsumers" t-as="consumer" t-key="consumer_index">
-                                                        <span class="property-name" t-esc="consumer.type"></span>: 
-                                                        <span t-esc="consumer.state"></span>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
+                                        <SessionProperties session="session" />
                                     </div>
                                 </div>
                             </div>
@@ -258,32 +226,6 @@ export class LogViewer extends Component {
         }
 
         return sessionId === timeline.selfSessionId?.toString();
-    }
-
-    getSessionStateClass(session) {
-        if (!session) return '';
-
-        if (session.state === 'connected' || session.peer?.state === 'connected') {
-            return 'connected';
-        }
-
-        if (session.state === 'connecting' || session.peer?.state === 'connecting') {
-            return 'connecting';
-        }
-
-        return 'disconnected';
-    }
-
-    getAudioState(state) {
-        const states = [
-            'HAVE_NOTHING',
-            'HAVE_METADATA',
-            'HAVE_CURRENT_DATA',
-            'HAVE_FUTURE_DATA',
-            'HAVE_ENOUGH_DATA'
-        ];
-
-        return states[state] || state;
     }
 
     setActiveView(viewId) {

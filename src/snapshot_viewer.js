@@ -1,4 +1,6 @@
 const { Component, xml, useState } = owl;
+import helpers from './utils/helpers.js';
+import { ConnectionState, SessionProperties } from './common/ui_components.js';
 
 export class SnapshotViewer extends Component {
     static template = xml`
@@ -19,7 +21,7 @@ export class SnapshotViewer extends Component {
                     <div class="connection-summary">
                         <div class="connection-type">
                             <span class="property-name">Connection Type:</span>
-                            <span class="property-value" t-esc="snapshotData.connectionType || 'Unknown'"></span>
+                            <span class="property-value" t-esc="snapshotData?.connectionType || 'Unknown'"></span>
                         </div>
                         
                         <div t-if="snapshotData.fallback !== undefined" class="fallback-mode">
@@ -88,64 +90,14 @@ export class SnapshotViewer extends Component {
                             
                             <div t-if="state.expandedSessions[session.id]" class="session-detail">
                                 <!-- Connection state -->
-                                <div class="connection-state">
-                                    <div t-attf-class="state-indicator {{ getSessionStateClass(session) }}"></div>
-                                    <span class="property-name">State:</span>
-                                    <span class="property-value" t-esc="session.state || 'Unknown'"></span>
-                                </div>
+                                <ConnectionState 
+                                    state="session.state || 'Unknown'"
+                                    stateClass="helpers.getSessionStateClass(session)"
+                                />
                                 
-                                <div class="session-properties">
-                                    <!-- Audio information -->
-                                    <div t-if="session.audio" class="property-card">
-                                        <h6>Audio</h6>
-                                        <ul class="property-list">
-                                            <li><span class="property-name">State:</span> <span t-esc="getAudioState(session.audio.state)"></span></li>
-                                            <li><span class="property-name">Muted:</span> <span t-esc="session.audio.muted ? 'Yes' : 'No'"></span></li>
-                                            <li><span class="property-name">Paused:</span> <span t-esc="session.audio.paused ? 'Yes' : 'No'"></span></li>
-                                            <li t-if="session.audio.networkState !== undefined"><span class="property-name">Network State:</span> <span t-esc="getNetworkState(session.audio.networkState)"></span></li>
-                                        </ul>
-                                    </div>
-                                    
-                                    <!-- Peer information -->
-                                    <div t-if="session.peer" class="property-card">
-                                        <h6>Peer Connection</h6>
-                                        <ul class="property-list">
-                                            <li><span class="property-name">ID:</span> <span t-esc="session.peer.id"></span></li>
-                                            <li><span class="property-name">State:</span> <span t-esc="session.peer.state"></span></li>
-                                            <li><span class="property-name">ICE State:</span> <span t-esc="session.peer.iceState"></span></li>
-                                        </ul>
-                                    </div>
-                                    
-                                    <!-- SFU info -->
-                                    <div t-if="session.sfuConsumers and session.sfuConsumers.length > 0" class="property-card">
-                                        <h6>SFU Consumers</h6>
-                                        <ul class="property-list">
-                                            <li t-foreach="session.sfuConsumers" t-as="consumer" t-key="consumer_index">
-                                                <span class="property-name" t-esc="consumer.type"></span>: 
-                                                <span t-esc="consumer.state"></span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    
-                                    <!-- Additional properties -->
-                                    <div class="property-card">
-                                        <h6>Other Properties</h6>
-                                        <ul class="property-list">
-                                            <li t-if="session.channelMemberId !== undefined">
-                                                <span class="property-name">Channel Member ID:</span> 
-                                                <span t-esc="session.channelMemberId"></span>
-                                            </li>
-                                            <li t-if="session.audioError">
-                                                <span class="property-name">Audio Error:</span> 
-                                                <span t-esc="session.audioError"></span>
-                                            </li>
-                                            <li t-if="session.videoError">
-                                                <span class="property-name">Video Error:</span> 
-                                                <span t-esc="session.videoError"></span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
+                                <SessionProperties 
+                                    session="session" 
+                                />
                             </div>
                         </div>
                     </div>
@@ -154,11 +106,17 @@ export class SnapshotViewer extends Component {
         </div>
     `;
 
+    static components = {
+        ConnectionState,
+        SessionProperties,
+    };
+
     setup() {
         this.state = useState({
             expanded: false,
             expandedSessions: {}
         });
+        this.helpers = helpers;
     }
 
     get snapshotData() {
@@ -200,42 +158,5 @@ export class SnapshotViewer extends Component {
 
     toggleSession(sessionId) {
         this.state.expandedSessions[sessionId] = !this.state.expandedSessions[sessionId];
-    }
-
-    getSessionStateClass(session) {
-        if (!session) return '';
-
-        if (session.state === 'connected' || session.peer?.state === 'connected') {
-            return 'connected';
-        }
-
-        if (session.state === 'connecting' || session.peer?.state === 'connecting') {
-            return 'connecting';
-        }
-
-        return 'disconnected';
-    }
-
-    getAudioState(state) {
-        const states = [
-            'HAVE_NOTHING',
-            'HAVE_METADATA',
-            'HAVE_CURRENT_DATA',
-            'HAVE_FUTURE_DATA',
-            'HAVE_ENOUGH_DATA'
-        ];
-
-        return states[state] || state;
-    }
-
-    getNetworkState(state) {
-        const states = [
-            'NETWORK_EMPTY',
-            'NETWORK_IDLE',
-            'downloading', // NETWORK_LOADING
-            'NETWORK_NO_SOURCE'
-        ];
-
-        return states[state] || state;
     }
 }
