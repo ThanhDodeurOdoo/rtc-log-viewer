@@ -1,5 +1,4 @@
 const { Component, xml, useState } = owl;
-import { LogViewer } from './log_viewer.js';
 import { TimelineViewer } from './timeline_viewer.js';
 import { SnapshotViewer } from './snapshot_viewer.js';
 import helpers from './utils/helpers.js';
@@ -8,14 +7,28 @@ import { NoData } from './common/ui_components.js';
 export class Main extends Component {
     static template = xml`
         <div id="main" class="rtc-log-viewer">
-            <div class="file-upload-container">
+            <div 
+                t-attf-class="file-upload-container {{ state.isDragOver ? 'drag-over' : '' }}"
+                t-on-dragover.prevent.stop="onDragOver"
+                t-on-dragleave.prevent.stop="onDragLeave"
+                t-on-drop.prevent.stop="onFileDrop"
+            >
                 <h2>RTC Log Viewer</h2>
                 <p>Upload a JSON log file to analyze the RTC connection data</p>
-                <div class="file-input">
-                    <input type="file" accept=".json" t-on-change="onFileChange"/>
-                    <button t-on-click="triggerFileInput">Choose File</button>
-                    <span t-if="state.fileName" class="file-name" t-esc="state.fileName"></span>
-                    <span t-else="" class="file-hint">No file chosen</span>
+                
+                <div class="drop-zone">
+                    <div class="drop-zone-prompt">
+                        <i class="drop-icon"></i>
+                        <p>Drag and drop your JSON log file here</p>
+                        <p>or</p>
+                    </div>
+                    
+                    <div class="file-input">
+                        <input type="file" accept=".json" t-on-change="onFileChange"/>
+                        <button t-on-click="triggerFileInput">Choose File</button>
+                        <span t-if="state.fileName" class="file-name" t-esc="state.fileName"></span>
+                        <span t-else="" class="file-hint">No file chosen</span>
+                    </div>
                 </div>
             </div>
             
@@ -24,15 +37,15 @@ export class Main extends Component {
                     <div class="system-info">
                         <h3>System Information</h3>
                         <table>
-                            <tr t-if="state.logs.odooInfo.server_version">
+                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.server_version">
                                 <td>Server Version:</td>
                                 <td t-esc="state.logs.odooInfo.server_version"></td>
                             </tr>
-                            <tr t-if="state.logs.odooInfo.db">
+                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.db">
                                 <td>Database:</td>
                                 <td t-esc="state.logs.odooInfo.db"></td>
                             </tr>
-                            <tr t-if="state.logs.odooInfo.isEnterprise !== undefined">
+                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.isEnterprise !== undefined">
                                 <td>Enterprise:</td>
                                 <td t-esc="state.logs.odooInfo.isEnterprise ? 'Yes' : 'No'"></td>
                             </tr>
@@ -56,31 +69,10 @@ export class Main extends Component {
                 
                 <div class="main-view">
                     <!-- Timelines View -->
-                    <div t-if="state.activeView === 'timelines'" class="timelines-container">
-                        <h3>Call Timelines</h3>
-                        <p class="view-description">Each timeline represents a sequence of events for a specific call session.</p>
-                        
-                        <NoData 
-                            t-if="!timelineKeys.length" 
-                            message="'No timeline data available in this log file'"
-                        />
-                        
-                        <div t-else="" class="timeline-list">
-                            <div 
-                                t-foreach="timelineKeys" 
-                                t-as="timelineKey" 
-                                t-key="timelineKey"
-                                class="timeline-entry"
-                            >
-                                <TimelineViewer 
-                                    timelineKey="timelineKey"
-                                    timelineData="state.logs.timelines[timelineKey]"
-                                    onSessionSelect="(sessionId) => this.setSelectedSession(timelineKey, sessionId)"
-                                    selectedSession="state.selectedSession"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    <TimelineViewer 
+                        t-if="state.activeView === 'timelines'" 
+                        logs="state.logs"
+                    />
                     
                     <!-- Snapshots View -->
                     <div t-if="state.activeView === 'snapshots'" class="snapshots-container">
@@ -120,7 +112,6 @@ export class Main extends Component {
     `;
 
     static components = {
-        LogViewer,
         TimelineViewer,
         SnapshotViewer,
         NoData,
@@ -131,9 +122,7 @@ export class Main extends Component {
             logs: null,
             fileName: '',
             activeView: 'timelines',
-            selectedTimeline: null,
-            selectedSession: null,
-            selectedSnapshot: null
+            isDragOver: false
         });
 
         this.viewOptions = [
@@ -144,54 +133,41 @@ export class Main extends Component {
         this.helpers = helpers;
     }
 
-    get timelineKeys() {
-        if (!this.state.logs || !this.state.logs.timelines) return [];
-        return Object.keys(this.state.logs.timelines).sort();
-    }
-
-    get snapshotKeys() {
-        if (!this.state.logs || !this.state.logs.snapshots) return [];
-        return Object.keys(this.state.logs.snapshots).sort();
-    }
-
-    get snapshotKeysForTimeline() {
-        if (!this.state.selectedTimeline || !this.state.logs || !this.state.logs.snapshots) {
-            return [];
-        }
-
-        // Extract timeline date info
-        const timelineDate = new Date(this.state.selectedTimeline).toISOString().split('T')[0];
-
-        // Filter snapshots that belong to this timeline (same date)
-        return this.snapshotKeys.filter(key => {
-            const snapshotDate = new Date(key).toISOString().split('T')[0];
-            return snapshotDate === timelineDate;
-        });
-    }
-
-    get availableSessions() {
-        if (!this.state.selectedTimeline || !this.state.logs || !this.state.logs.timelines) {
-            return [];
-        }
-
-        const timeline = this.state.logs.timelines[this.state.selectedTimeline];
-        if (!timeline || !timeline.entriesBySessionId) {
-            return [];
-        }
-
-        return Object.keys(timeline.entriesBySessionId).filter(id => {
-            // Filter out any non-numeric IDs (like "hasTurn")
-            return !isNaN(parseInt(id));
-        });
-    }
-
     triggerFileInput() {
         document.querySelector('input[type="file"]').click();
     }
 
     onFileChange(event) {
         const file = event.target.files[0];
+        this.processFile(file);
+    }
+
+    onDragOver(event) {
+        this.state.isDragOver = true;
+    }
+
+    onDragLeave(event) {
+        this.state.isDragOver = false;
+    }
+
+    onFileDrop(event) {
+        this.state.isDragOver = false;
+
+        const files = event.dataTransfer.files;
+        if (files.length === 0) return;
+
+        const file = files[0];
+        this.processFile(file);
+    }
+
+    processFile(file) {
         if (!file) return;
+
+        // Check if it's a JSON file
+        if (!file.name.toLowerCase().endsWith('.json')) {
+            alert('Please upload a JSON file.');
+            return;
+        }
 
         this.state.fileName = file.name;
 
@@ -209,11 +185,6 @@ export class Main extends Component {
     }
 
     processParsedLogs(logs) {
-        // Reset selections when loading new logs
-        this.state.selectedTimeline = null;
-        this.state.selectedSession = null;
-        this.state.selectedSnapshot = null;
-
         this.state.logs = logs;
     }
 
@@ -221,21 +192,8 @@ export class Main extends Component {
         this.state.activeView = viewId;
     }
 
-    setSelectedSession(timeline, sessionId) {
-        this.state.selectedTimeline = timeline;
-        this.state.selectedSession = sessionId;
-    }
-
-    selectSnapshot(snapshotId) {
-        this.state.selectedSnapshot = snapshotId;
-    }
-
-    onTimelineSelect(event) {
-        this.state.selectedTimeline = event.target.value;
-        this.state.selectedSession = null;
-    }
-
-    onSessionSelect(event) {
-        this.state.selectedSession = event.target.value;
+    get snapshotKeys() {
+        if (!this.state.logs || !this.state.logs.snapshots) return [];
+        return Object.keys(this.state.logs.snapshots).sort();
     }
 }

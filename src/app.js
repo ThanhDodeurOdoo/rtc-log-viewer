@@ -1,7 +1,5 @@
 const { Component, mount, xml } = owl;
 import { Main } from './main.js';
-
-// Define the root component
 class Root extends Component {
     static template = xml`
         <div id="root">

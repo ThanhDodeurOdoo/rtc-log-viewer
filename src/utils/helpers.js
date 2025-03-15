@@ -79,6 +79,96 @@ export function getNetworkState(state) {
     return states[state] || state;
 }
 
+/**
+ * Calculate a visible time range based on zoom level and pan position
+ * @param {string} startTime - ISO string of timeline start time
+ * @param {string} endTime - ISO string of timeline end time
+ * @param {number} zoomLevel - Value from 1-10 where 1 is full range
+ * @param {number} panPosition - Value from 0-1 representing position in zoomed timeline
+ * @returns {Object} Object with visible start and end times
+ */
+export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosition) {
+    if (!startTime || !endTime) {
+        return {
+            visibleStartTime: new Date(),
+            visibleEndTime: new Date(),
+            fullStartTime: new Date(),
+            fullEndTime: new Date()
+        };
+    }
+
+    const fullStartTime = new Date(startTime);
+    const fullEndTime = new Date(endTime);
+    const fullRange = fullEndTime.getTime() - fullStartTime.getTime();
+
+    // If no zoom, show full range
+    if (zoomLevel <= 1) {
+        return {
+            visibleStartTime: fullStartTime,
+            visibleEndTime: fullEndTime,
+            fullStartTime,
+            fullEndTime
+        };
+    }
+
+    // Calculate visible range based on zoom
+    const visibleRangeDuration = fullRange / zoomLevel;
+
+    // Calculate the maximum possible pan offset
+    const maxPanOffset = fullRange - visibleRangeDuration;
+
+    // Apply pan position (0 = start, 1 = end)
+    const panOffset = Math.min(maxPanOffset, maxPanOffset * panPosition);
+
+    // Calculate visible start and end times
+    const visibleStartTime = new Date(fullStartTime.getTime() + panOffset);
+    const visibleEndTime = new Date(visibleStartTime.getTime() + visibleRangeDuration);
+
+    return {
+        visibleStartTime,
+        visibleEndTime,
+        fullStartTime,
+        fullEndTime
+    };
+}
+
+/**
+ * Group events that are positioned close to each other on the timeline
+ * @param {Array} events - Array of event objects with position property
+ * @param {number} threshold - Threshold percentage for considering events as clustered
+ * @returns {Array} Array of event groups (each group is an array of events)
+ */
+export function groupCloseEvents(events, threshold = 5) {
+    if (!events || !events.length) return [];
+
+    // Sort events by position
+    const sortedEvents = [...events].sort((a, b) => a.position - b.position);
+
+    const groups = [];
+    let currentGroup = [];
+
+    for (const event of sortedEvents) {
+        if (currentGroup.length === 0) {
+            currentGroup.push(event);
+        } else {
+            const lastEvent = currentGroup[currentGroup.length - 1];
+
+            if (Math.abs(lastEvent.position - event.position) < threshold) {
+                currentGroup.push(event);
+            } else {
+                groups.push([...currentGroup]);
+                currentGroup = [event];
+            }
+        }
+    }
+
+    if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+    }
+
+    return groups;
+}
+
 export default {
     formatEventTime,
     formatEventText,
@@ -86,5 +176,7 @@ export default {
     getSessionStateClass,
     getConnectionStateClass,
     getAudioState,
-    getNetworkState
+    getNetworkState,
+    calculateVisibleTimeRange,
+    groupCloseEvents
 };

@@ -1,20 +1,18 @@
 const { Component, xml, useState } = owl;
 import helpers from '../utils/helpers.js';
 
-// Expandable section component
 export class ExpandableSection extends Component {
     static template = xml`
         <div t-attf-class="{{ props.className }}">
             <div t-attf-class="{{ props.headerClass }}">
                 <h4 t-esc="props.title"></h4>
-                <button 
+                <button
                     t-attf-class="{{ props.toggleClass }} {{ state.expanded ? 'expanded' : 'collapsed' }}"
                     t-on-click="toggleExpanded"
                 >
                     <t t-esc="state.expanded ? '▼' : '►'" />
                 </button>
             </div>
-            
             <div t-if="state.expanded" t-attf-class="{{ props.contentClass }}">
                 <t t-slot="default"/>
             </div>
@@ -30,7 +28,6 @@ export class ExpandableSection extends Component {
     }
 }
 
-// NoData component for consistent "no data" messaging
 export class NoData extends Component {
     static template = xml`
         <div class="no-data">
@@ -39,7 +36,6 @@ export class NoData extends Component {
     `;
 }
 
-// EventList component for consistent event rendering
 export class EventList extends Component {
     static template = xml`
         <div class="event-list">
@@ -67,7 +63,6 @@ export class EventList extends Component {
     }
 }
 
-// SessionProperties component for rendering session properties consistently
 export class SessionProperties extends Component {
     static template = xml`
         <div class="session-properties">
@@ -128,8 +123,6 @@ export class SessionProperties extends Component {
         this.helpers = helpers;
     }
 }
-
-// Connection state indicator
 export class ConnectionState extends Component {
     static template = xml`
         <div class="connection-state">
