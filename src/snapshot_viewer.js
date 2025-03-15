@@ -52,7 +52,7 @@ export class SnapshotViewer extends Component {
                             
                             <div t-if="snapshotData.server.info" class="server-info-data">
                                 <span class="property-name">Info:</span>
-                                <pre class="json-data" t-esc="window.JSON.stringify(snapshotData.server.info, null, 2)"></pre>
+                                <pre class="json-data" t-esc="JSON.stringify(snapshotData.server.info, null, 2)"></pre>
                             </div>
                         </div>
                     </div>
@@ -190,14 +190,12 @@ export class SnapshotViewer extends Component {
     getSnapshotTitle() {
         const key = this.props.snapshotKey;
 
-        // Extract date and time from snapshot key (snapshot-YYYY-MM-DD-HH-MM-SS)
-        const match = key.match(/snapshot-(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})/);
-        if (match) {
-            const [_, year, month, day, hour, minute, second] = match;
-            return `Snapshot: ${year}/${month}/${day} ${hour}:${minute}:${second}`;
+        try {
+            const date = new Date(key);
+            return `Snapshot: ${date.toLocaleString()}`;
+        } catch (e) {
+            return key;
         }
-
-        return key;
     }
 
     toggleSession(sessionId) {

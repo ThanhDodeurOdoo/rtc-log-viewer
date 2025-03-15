@@ -20,44 +20,46 @@ export class TimelineViewer extends Component {
                         t-foreach="sessionIds" 
                         t-as="sessionId" 
                         t-key="sessionId"
-                        t-attf-class="session-tab {{ state.activeSessionId === sessionId ? 'active' : '' }}"
-                        t-on-click="() => this.setActiveSession(sessionId)"
+                        t-attf-class="session-tab {{ props.selectedSession === sessionId ? 'active' : '' }}"
+                        t-on-click="() => this.selectSession(sessionId)"
                     >
                         Session <t t-esc="sessionId"/>
-                        <span t-if="isSelfSession(sessionId)" class="self-indicator">(Self)</span>
+                        <span t-if="isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
                     </div>
                 </div>
                 
                 <!-- Session details -->
                 <div t-if="state.activeSessionId" class="session-details">
                     <!-- Connection step -->
-                    <div t-if="activeSessionData.step" class="connection-step">
-                        Connection Step: <span class="step-value" t-esc="activeSessionData.step"></span>
+                    <div t-if="activeSessionInfo.step" class="connection-step">
+                        <span class="property-name">Connection Step:</span>
+                        <span class="step-value" t-esc="activeSessionInfo.step"></span>
                     </div>
                     
                     <!-- Connection state -->
-                    <div t-if="activeSessionData.state" class="connection-state">
-                        <div t-attf-class="state-indicator {{ getStateClass(activeSessionData.state) }}"></div>
-                        Connection State: <span class="state-value" t-esc="activeSessionData.state"></span>
+                    <div t-if="activeSessionInfo.state" class="connection-state">
+                        <div t-attf-class="state-indicator {{ getStateClass(activeSessionInfo.state) }}"></div>
+                        <span class="property-name">Connection State:</span>
+                        <span class="state-value" t-esc="activeSessionInfo.state"></span>
                     </div>
                     
                     <!-- Events log -->
                     <div class="events-log">
                         <h5>Events</h5>
                         <div class="event-list">
-                            <div t-if="!hasEvents" class="no-data">
+                            <div t-if="!sessionEvents.length" class="no-data">
                                 No events recorded for this session
                             </div>
                             <div t-else="" class="event-items">
                                 <div 
                                     t-foreach="sessionEvents" 
                                     t-as="event" 
-                                    t-key="event.id"
+                                    t-key="event_index"
                                     t-attf-class="event-item {{ event.level ? event.level : '' }}"
                                 >
-                                    <span class="event-time" t-esc="event.time"></span>
+                                    <span class="event-time" t-esc="formatEventTime(event)"></span>
                                     <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-esc="event.level"></span>
-                                    <span class="event-text" t-esc="event.text"></span>
+                                    <span class="event-text" t-esc="formatEventText(event)"></span>
                                 </div>
                             </div>
                         </div>
@@ -77,82 +79,60 @@ export class TimelineViewer extends Component {
     mounted() {
         // Set first session as active by default when component is mounted
         if (this.sessionIds.length > 0 && !this.state.activeSessionId) {
-            this.setActiveSession(this.sessionIds[0]);
+            this.selectSession(this.sessionIds[0]);
         }
     }
 
     get sessionIds() {
         const timelineData = this.props.timelineData;
-        if (!timelineData) return [];
+        if (!timelineData || !timelineData.entriesBySessionId) return [];
 
-        return Object.keys(timelineData)
+        return Object.keys(timelineData.entriesBySessionId)
             .filter(key => key !== 'hasTurn' && !isNaN(parseInt(key)))
             .sort((a, b) => parseInt(a) - parseInt(b));
     }
 
-    get activeSessionData() {
-        if (!this.state.activeSessionId || !this.props.timelineData) {
+    get activeSessionInfo() {
+        if (!this.state.activeSessionId || !this.props.timelineData || !this.props.timelineData.entriesBySessionId) {
             return {};
         }
 
-        return this.props.timelineData[this.state.activeSessionId] || {};
+        return this.props.timelineData.entriesBySessionId[this.state.activeSessionId] || {};
     }
 
     get sessionEvents() {
-        const sessionData = this.activeSessionData;
-        if (!sessionData || !sessionData.logs || !Array.isArray(sessionData.logs)) {
+        const sessionInfo = this.activeSessionInfo;
+        if (!sessionInfo || !sessionInfo.logs || !Array.isArray(sessionInfo.logs)) {
             return [];
         }
 
-        return sessionData.logs.map((log, index) => {
-            // Extract timestamp from event string
-            const timeMatch = log.event.match(/(\d{2}:\d{2}:\d{2}):/);
-            const time = timeMatch ? timeMatch[1] : '';
-            const text = timeMatch ? log.event.substring(timeMatch[0].length).trim() : log.event;
-
-            return {
-                id: `event_${index}`,
-                time: time,
-                text: text,
-                level: log.level || 'info'
-            };
-        });
-    }
-
-    get hasEvents() {
-        return this.sessionEvents.length > 0;
+        return sessionInfo.logs;
     }
 
     getTimelineTitle() {
-        const key = this.props.timelineKey;
+        if (!this.props.timelineData) return "Timeline";
 
-        // Extract channel ID, session ID and date from the key format: "c:{channel}-s:{session}-d:{date}"
-        const channelMatch = key.match(/c:(\d+)/);
-        const sessionMatch = key.match(/s:(\d+)/);
-        const dateMatch = key.match(/d:([\d-:]+)/);
+        try {
+            const date = new Date(this.props.timelineKey);
+            const formattedDate = date.toLocaleString();
 
-        const channelId = channelMatch ? channelMatch[1] : '?';
-        const sessionId = sessionMatch ? sessionMatch[1] : '?';
-        const dateTime = dateMatch ? this.formatDateTime(dateMatch[1]) : '';
+            const channelId = this.props.timelineData.channelId;
+            const selfSessionId = this.props.timelineData.selfSessionId;
 
-        return `Timeline: Channel ${channelId} - Session ${sessionId} - ${dateTime}`;
+            return `Timeline: Channel ${channelId} - Session ${selfSessionId} - ${formattedDate}`;
+        } catch (e) {
+            return `Timeline: ${this.props.timelineKey}`;
+        }
     }
 
-    formatDateTime(dateTimeStr) {
-        // Format: 2025-03-12-10:24:37 to 2025-03-12 10:24:37
-        return dateTimeStr.replace('-', ' ').replace(/-/g, '/');
-    }
-
-    setActiveSession(sessionId) {
+    selectSession(sessionId) {
         this.state.activeSessionId = sessionId;
+        this.props.onSessionSelect(sessionId);
     }
 
-    isSelfSession(sessionId) {
-        // Check if the timeline key contains this session ID
-        const timelineKey = this.props.timelineKey;
-        const sessionInKey = timelineKey.includes(`s:${sessionId}`);
-
-        return sessionInKey;
+    isSessionSelf(sessionId) {
+        if (!this.props.timelineData) return false;
+        return sessionId === this.props.timelineData.selfSessionId?.toString();
     }
 
     getStateClass(state) {
@@ -161,5 +141,30 @@ export class TimelineViewer extends Component {
         if (state.includes('connected')) return 'connected';
         if (state.includes('connecting')) return 'connecting';
         return 'disconnected';
+    }
+
+    formatEventTime(event) {
+        if (!event || !event.event) return '';
+
+        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
+        if (timeMatch && timeMatch[1]) {
+            // Check if ISO format
+            if (timeMatch[1].includes('T')) {
+                const date = new Date(timeMatch[1]);
+                return date.toLocaleTimeString();
+            }
+            return timeMatch[1];
+        }
+        return '';
+    }
+
+    formatEventText(event) {
+        if (!event || !event.event) return '';
+
+        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
+        if (timeMatch) {
+            return event.event.substring(timeMatch[0].length).trim();
+        }
+        return event.event;
     }
 }

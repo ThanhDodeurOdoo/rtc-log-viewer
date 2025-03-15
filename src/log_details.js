@@ -10,18 +10,18 @@ export class LogDetails extends Component {
                 </div>
             </div>
             
-            <div t-if="!props.sessionData and !props.selectedSnapshot" class="no-data">
+            <div t-if="!props.sessionData && !props.selectedSnapshot" class="no-data">
                 No session data available
             </div>
             
             <div t-elif="!props.selectedSnapshot" class="session-logs">
                 <h4>Session Events</h4>
                 <div class="event-list">
-                    <div t-foreach="sessionEvents" t-as="event" t-key="event.id" 
-                         t-att-class="'event-item ' + getEventClass(event)">
-                        <span class="event-time" t-esc="event.time"></span>
-                        <span t-if="event.level" t-att-class="'event-level ' + event.level" t-esc="event.level"></span>
-                        <span t-esc="event.text"></span>
+                    <div t-foreach="sessionEvents" t-as="event" t-key="event_index" 
+                         t-attf-class="event-item {{ event.level ? event.level : '' }}">
+                        <span class="event-time" t-esc="formatEventTime(event)"></span>
+                        <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-esc="event.level"></span>
+                        <span t-esc="formatEventText(event)"></span>
                     </div>
                 </div>
             </div>
@@ -148,123 +148,59 @@ export class LogDetails extends Component {
     }
 
     get sessionEvents() {
-        if (!this.props.sessionData) return [];
+        if (!this.props.sessionData || !this.props.selectedSession) return [];
 
-        const events = [];
-        let eventId = 0;
+        const session = this.props.sessionData.entriesBySessionId[this.props.selectedSession];
+        if (!session || !session.logs || !Array.isArray(session.logs)) {
+            return [];
+        }
 
-        // Process session data to extract events from timelines
-        const timelines = this.props.sessionData.timelines || {};
-
-        Object.entries(timelines).forEach(([timelineKey, timelineData]) => {
-            // Process all logs for all session IDs in the data
-            Object.entries(timelineData).forEach(([sessionId, sessionInfo]) => {
-                // Skip non-log data like "hasTurn"
-                if (sessionId === 'hasTurn') return;
-
-                // Add step information as an event
-                if (sessionInfo.step) {
-                    events.push({
-                        id: `step_${eventId++}`,
-                        time: this.extractTimeFromTimelineKey(timelineKey),
-                        text: `Step: ${sessionInfo.step}`,
-                        level: 'info',
-                        sessionId: sessionId,
-                        timelineKey: timelineKey
-                    });
-                }
-
-                // Skip properties that are not logs
-                if (!sessionInfo.logs || !Array.isArray(sessionInfo.logs)) return;
-
-                sessionInfo.logs.forEach(log => {
-                    // Extract timestamp from event string
-                    const timeMatch = log.event.match(/(\d{2}:\d{2}:\d{2}):/);
-                    if (timeMatch && timeMatch[1]) {
-                        const time = timeMatch[1];
-                        const eventText = log.event.substring(timeMatch[0].length).trim();
-
-                        events.push({
-                            id: `event_${eventId++}`,
-                            time: time,
-                            text: eventText,
-                            level: log.level || 'info',
-                            sessionId: sessionId,
-                            timelineKey: timelineKey
-                        });
-                    } else {
-                        // If no timestamp found, just use the whole event
-                        events.push({
-                            id: `event_${eventId++}`,
-                            time: this.extractTimeFromTimelineKey(timelineKey),
-                            text: log.event,
-                            level: log.level || 'info',
-                            sessionId: sessionId,
-                            timelineKey: timelineKey
-                        });
-                    }
-                });
-            });
-        });
-
-        // Sort events by time
-        events.sort((a, b) => {
-            if (!a.time) return -1;
-            if (!b.time) return 1;
-
-            const aTime = a.time.split(':').map(Number);
-            const bTime = b.time.split(':').map(Number);
-
-            for (let i = 0; i < aTime.length; i++) {
-                if (aTime[i] !== bTime[i]) {
-                    return aTime[i] - bTime[i];
-                }
-            }
-
-            return 0;
-        });
-
-        return events;
+        return session.logs;
     }
 
     get snapshot() {
         if (!this.props.selectedSnapshot || !this.props.sessionData) return null;
 
-        const snapshots = this.props.sessionData.snapshots || {};
-        return snapshots[this.props.selectedSnapshot] || null;
+        const snapshots = this.props.sessionData?.snapshots;
+        return snapshots ? snapshots[this.props.selectedSnapshot] : null;
     }
 
-    extractTimeFromTimelineKey(key) {
-        // Extract time from format "c:1-s:3-d:2025-03-12-10:24:37"
-        const match = key.match(/d:(\d{4}-\d{2}-\d{2}-(\d{2}):(\d{2}):(\d{2}))/);
-        if (match) {
-            return `${match[2]}:${match[3]}:${match[4]}`;
+    formatEventTime(event) {
+        if (!event || !event.event) return '';
+
+        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
+        if (timeMatch && timeMatch[1]) {
+            // Check if ISO format
+            if (timeMatch[1].includes('T')) {
+                const date = new Date(timeMatch[1]);
+                return date.toLocaleTimeString();
+            }
+            return timeMatch[1];
         }
-        return '00:00:00'; // Default if no time found
+        return '';
+    }
+
+    formatEventText(event) {
+        if (!event || !event.event) return '';
+
+        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
+        if (timeMatch) {
+            return event.event.substring(timeMatch[0].length).trim();
+        }
+        return event.event;
     }
 
     getFormattedSnapshotTime() {
         if (!this.props.selectedSnapshot) return '';
 
-        // Extract date and time from snapshot ID (snapshot-YYYY-MM-DD-HH-MM-SS)
         try {
-            const parts = this.props.selectedSnapshot.substring(9).split('-');
-            if (parts.length >= 6) {
-                const date = `${parts[0]}-${parts[1]}-${parts[2]}`;
-                const time = `${parts[3]}:${parts[4]}:${parts[5]}`;
-                return `${date} ${time}`;
-            }
+            const date = new Date(this.props.selectedSnapshot);
+            return date.toLocaleString();
         } catch (e) {
             console.error("Error parsing snapshot time", e);
         }
 
         return this.props.selectedSnapshot;
-    }
-
-    getEventClass(event) {
-        if (event.level === 'warn') return 'warning';
-        if (event.level === 'error') return 'error';
-        return '';
     }
 
     getConnectionClass(snapshot) {

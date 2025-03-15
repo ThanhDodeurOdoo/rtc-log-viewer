@@ -1,16 +1,16 @@
-const { Component, App, mount, xml, useState } = owl;
+const { Component, xml, useState } = owl;
 import { LogViewer } from './log_viewer.js';
-import { SessionTimeline } from './session_timeline.js';
-import { LogDetails } from './log_details.js';
 import { TimelineViewer } from './timeline_viewer.js';
 import { SnapshotViewer } from './snapshot_viewer.js';
+import { SessionTimeline } from './session_timeline.js';
+import { LogDetails } from './log_details.js';
 
 export class Main extends Component {
     static template = xml`
         <div id="main" class="rtc-log-viewer">
             <div class="file-upload-container">
+                <h2>RTC Log Viewer</h2>
                 <p>Upload a JSON log file to analyze the RTC connection data</p>
-                <p>Refer to <a href="https://www.odoo.com/knowledge/article/28833">this article</a> for more information on how to enable RTC logging in Odoo</p>
                 <div class="file-input">
                     <input type="file" accept=".json" t-on-change="onFileChange"/>
                     <button t-on-click="triggerFileInput">Choose File</button>
@@ -58,7 +58,7 @@ export class Main extends Component {
                     <!-- Timelines View -->
                     <div t-if="state.activeView === 'timelines'" class="timelines-container">
                         <h3>Call Timelines</h3>
-                        <p class="view-description">Each timeline represents a sequence of events for a specific call.</p>
+                        <p class="view-description">Each timeline represents a sequence of events for a specific call session.</p>
                         
                         <div t-if="!timelineKeys.length" class="no-data">
                             No timeline data available in this log file
@@ -73,7 +73,19 @@ export class Main extends Component {
                             >
                                 <TimelineViewer 
                                     timelineKey="timelineKey"
-                                    timelineData="state.logs[timelineKey]"
+                                    timelineData="state.logs.timelines[timelineKey]"
+                                    onSessionSelect="(sessionId) => this.setSelectedSession(timelineKey, sessionId)"
+                                    selectedSession="state.selectedSession"
+                                />
+                            </div>
+                            
+                            <div t-if="state.selectedTimeline and state.selectedSession" class="session-details-container">
+                                <LogDetails 
+                                    sessionData="state.logs.timelines[state.selectedTimeline]"
+                                    selectedSession="state.selectedSession"
+                                    snapshots="snapshotKeys"
+                                    selectedSnapshot="state.selectedSnapshot"
+                                    onSnapshotSelect="(snapshotId) => this.selectSnapshot(snapshotId)"
                                 />
                             </div>
                         </div>
@@ -97,7 +109,45 @@ export class Main extends Component {
                             >
                                 <SnapshotViewer 
                                     snapshotKey="snapshotKey"
-                                    snapshotData="state.logs[snapshotKey]"
+                                    snapshotData="state.logs.snapshots[snapshotKey]"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Session Timeline View -->
+                    <div t-if="state.activeView === 'session-timeline'" class="session-timeline-container">
+                        <h3>Session Timeline View</h3>
+                        <p class="view-description">Visualize the timeline of events for a specific session.</p>
+                        
+                        <div t-if="!timelineKeys.length" class="no-data">
+                            No timeline data available in this log file
+                        </div>
+                        
+                        <div t-else="">
+                            <div class="session-selector">
+                                <label for="timeline-select">Select Timeline:</label>
+                                <select id="timeline-select" t-on-change="onTimelineSelect">
+                                    <option value="">-- Select a timeline --</option>
+                                    <option t-foreach="timelineKeys" t-as="key" t-key="key" t-att-value="key" t-esc="formatTimelineDate(key)"></option>
+                                </select>
+                                
+                                <t t-if="state.selectedTimeline">
+                                    <label for="session-select">Select Session:</label>
+                                    <select id="session-select" t-on-change="onSessionSelect">
+                                        <option value="">-- Select a session --</option>
+                                        <option t-foreach="availableSessions" t-as="session" t-key="session" t-att-value="session" t-esc="'Session ' + session"></option>
+                                    </select>
+                                </t>
+                            </div>
+                            
+                            <div t-if="state.selectedTimeline and state.selectedSession" class="session-timeline-view">
+                                <SessionTimeline 
+                                    session="state.selectedSession"
+                                    sessionData="state.logs.timelines[state.selectedTimeline]"
+                                    snapshots="snapshotKeysForTimeline"
+                                    selectedSnapshot="state.selectedSnapshot"
+                                    onSnapshotSelect="(snapshotId) => this.selectSnapshot(snapshotId)"
                                 />
                             </div>
                         </div>
@@ -107,7 +157,7 @@ export class Main extends Component {
                     <div t-if="state.activeView === 'raw'" class="raw-data-container">
                         <h3>Raw Log Data</h3>
                         <div class="raw-data">
-                            <pre t-esc="window.JSON.stringify(state.logs, null, 2)"></pre>
+                            <pre t-esc="JSON.stringify(state.logs, null, 2)"></pre>
                         </div>
                     </div>
                 </div>
@@ -115,44 +165,76 @@ export class Main extends Component {
         </div>
     `;
 
-    static components = { LogViewer, SessionTimeline, LogDetails, TimelineViewer, SnapshotViewer };
+    static components = { LogViewer, TimelineViewer, SnapshotViewer, SessionTimeline, LogDetails };
 
     setup() {
         this.state = useState({
             logs: null,
             fileName: '',
-            activeView: 'timelines'
+            activeView: 'timelines',
+            selectedTimeline: null,
+            selectedSession: null,
+            selectedSnapshot: null
         });
 
         this.viewOptions = [
             { id: 'timelines', label: 'Timelines' },
             { id: 'snapshots', label: 'Snapshots' },
+            { id: 'session-timeline', label: 'Session Timeline' },
             { id: 'raw', label: 'Raw Data' }
         ];
     }
 
     get timelineKeys() {
-        if (!this.state.logs) return [];
-        return Object.keys(this.state.logs)
-            .filter(key => key.startsWith('c:'))
-            .sort((a, b) => {
-                const timeA = this.extractDateFromKey(a);
-                const timeB = this.extractDateFromKey(b);
-                return timeA.localeCompare(timeB);
-            });
+        if (!this.state.logs || !this.state.logs.timelines) return [];
+        return Object.keys(this.state.logs.timelines).sort();
     }
 
     get snapshotKeys() {
-        if (!this.state.logs) return [];
-        return Object.keys(this.state.logs)
-            .filter(key => key.startsWith('snapshot-'))
-            .sort();
+        if (!this.state.logs || !this.state.logs.snapshots) return [];
+        return Object.keys(this.state.logs.snapshots).sort();
     }
 
-    extractDateFromKey(key) {
-        // Extract date from format "c:1-s:3-d:2025-03-12-10:24:37"
-        const match = key.match(/d:([\d-:]+)/);
-        return match ? match[1] : '';
+    get snapshotKeysForTimeline() {
+        if (!this.state.selectedTimeline || !this.state.logs || !this.state.logs.snapshots) {
+            return [];
+        }
+
+        // Extract timeline date info
+        const timelineDate = new Date(this.state.selectedTimeline).toISOString().split('T')[0];
+
+        // Filter snapshots that belong to this timeline (same date)
+        return this.snapshotKeys.filter(key => {
+            const snapshotDate = new Date(key).toISOString().split('T')[0];
+            return snapshotDate === timelineDate;
+        });
+    }
+
+    get availableSessions() {
+        if (!this.state.selectedTimeline || !this.state.logs || !this.state.logs.timelines) {
+            return [];
+        }
+
+        const timeline = this.state.logs.timelines[this.state.selectedTimeline];
+        if (!timeline || !timeline.entriesBySessionId) {
+            return [];
+        }
+
+        return Object.keys(timeline.entriesBySessionId).filter(id => {
+            // Filter out any non-numeric IDs (like "hasTurn")
+            return !isNaN(parseInt(id));
+        });
+    }
+
+    formatTimelineDate(timelineKey) {
+        if (!timelineKey) return '';
+
+        try {
+            const date = new Date(timelineKey);
+            return date.toLocaleString();
+        } catch (e) {
+            return timelineKey;
+        }
     }
 
     triggerFileInput() {
@@ -179,11 +261,33 @@ export class Main extends Component {
     }
 
     processParsedLogs(logs) {
+        // Reset selections when loading new logs
+        this.state.selectedTimeline = null;
+        this.state.selectedSession = null;
+        this.state.selectedSnapshot = null;
+
         this.state.logs = logs;
     }
 
     setActiveView(viewId) {
         this.state.activeView = viewId;
     }
-}
 
+    setSelectedSession(timeline, sessionId) {
+        this.state.selectedTimeline = timeline;
+        this.state.selectedSession = sessionId;
+    }
+
+    selectSnapshot(snapshotId) {
+        this.state.selectedSnapshot = snapshotId;
+    }
+
+    onTimelineSelect(event) {
+        this.state.selectedTimeline = event.target.value;
+        this.state.selectedSession = null;
+    }
+
+    onSessionSelect(event) {
+        this.state.selectedSession = event.target.value;
+    }
+}

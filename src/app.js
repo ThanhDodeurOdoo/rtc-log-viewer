@@ -5,8 +5,7 @@ import { Main } from './main.js';
 class Root extends Component {
     static template = xml`
         <div id="root">
-        <h1>RTC LOG VIEWER</h1>
-        <Main />
+            <Main />
         </div>
     `;
 
