@@ -10,7 +10,7 @@ export class LogDetails extends Component {
                 </div>
             </div>
             
-            <div t-if="!props.sessionData && !props.selectedSnapshot" class="no-data">
+            <div t-if="!props.sessionData and !props.selectedSnapshot" class="no-data">
                 No session data available
             </div>
             
@@ -55,7 +55,7 @@ export class LogDetails extends Component {
                             No server information available
                         </div>
                         <div t-else="">
-                            <div t-if="snapshot.server.info">Server: <span t-esc="JSON.stringify(snapshot.server.info)"></span></div>
+                            <div t-if="snapshot.server.info">Server: <span t-esc="window.JSON.stringify(snapshot.server.info)"></span></div>
                             <div t-if="snapshot.server.state">State: <span t-esc="snapshot.server.state"></span></div>
                             <div t-if="snapshot.server.errors and snapshot.server.errors.length">
                                 <div>Errors:</div>

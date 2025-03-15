@@ -52,7 +52,7 @@ export class SnapshotViewer extends Component {
                             
                             <div t-if="snapshotData.server.info" class="server-info-data">
                                 <span class="property-name">Info:</span>
-                                <pre class="json-data" t-esc="JSON.stringify(snapshotData.server.info, null, 2)"></pre>
+                                <pre class="json-data" t-esc="window.JSON.stringify(snapshotData.server.info, null, 2)"></pre>
                             </div>
                         </div>
                     </div>

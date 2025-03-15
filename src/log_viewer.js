@@ -164,7 +164,7 @@ export class LogViewer extends Component {
                 <!-- Raw data view -->
                 <div t-elif="state.activeView === 'raw'" class="raw-view">
                     <h4>Raw Data View</h4>
-                    <pre t-esc="JSON.stringify(props.logs, null, 2)"></pre>
+                    <pre t-esc="window.JSON.stringify(props.logs, null, 2)"></pre>
                 </div>
             </div>
         </div>

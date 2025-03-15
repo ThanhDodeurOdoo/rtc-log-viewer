@@ -157,7 +157,7 @@ export class Main extends Component {
                     <div t-if="state.activeView === 'raw'" class="raw-data-container">
                         <h3>Raw Log Data</h3>
                         <div class="raw-data">
-                            <pre t-esc="JSON.stringify(state.logs, null, 2)"></pre>
+                            <pre t-esc="window.JSON.stringify(state.logs, null, 2)"></pre>
                         </div>
                     </div>
                 </div>
