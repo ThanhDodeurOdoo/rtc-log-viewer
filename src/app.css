@@ -682,14 +682,29 @@ label {
     overflow: visible;
 }
 
-.visual-timeline .timeline-line {
+/* Timeline segments by connection state */
+.timeline-segment {
     position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
+    top: 13px;
+    /* Center in timeline */
     height: 4px;
-    background-color: var(--border-color);
     border-radius: 2px;
+    z-index: 1;
+}
+
+.timeline-segment.connected {
+    background-color: var(--accent-color);
+}
+
+.timeline-segment.connecting,
+.timeline-segment.new {
+    background-color: var(--warning-color);
+}
+
+.timeline-segment.disconnected,
+.timeline-segment.failed,
+.timeline-segment.closed {
+    background-color: var(--error-color);
 }
 
 .timeline-times {
@@ -703,10 +718,11 @@ label {
 .visual-timeline .timeline-event {
     position: absolute;
     top: 15px;
+    transform: translateY(-50%);
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    z-index: 2;
+    z-index: 5;
     cursor: pointer;
     border: 2px solid white;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -715,7 +731,20 @@ label {
 
 .visual-timeline .timeline-event:hover {
     transform: scale(1.3);
-    z-index: 3;
+    z-index: 6;
+}
+
+/* Event type colors */
+.timeline-event.info {
+    background-color: var(--primary-color);
+}
+
+.timeline-event.warning {
+    background-color: var(--warning-color);
+}
+
+.timeline-event.error {
+    background-color: var(--error-color);
 }
 
 /* View option buttons */

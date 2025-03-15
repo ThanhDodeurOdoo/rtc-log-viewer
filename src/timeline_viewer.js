@@ -34,14 +34,22 @@ export class TimelineViewer extends Component {
                 <div t-if="state.activeSessionId" class="visual-timeline-container">
                     <h5>Session Timeline</h5>
                     <div class="visual-timeline">
-                        <div class="timeline-line"></div>
+                        <!-- Connection state segments -->
+                        <t t-foreach="getConnectionStateSegments()" t-as="segment" t-key="segment_index">
+                            <div 
+                                class="timeline-segment" 
+                                t-attf-class="timeline-segment {{ helpers.getConnectionStateClass(segment.state) }}"
+                                t-attf-style="left: {{ segment.startPos }}%; width: {{ segment.width }}%;"
+                                t-att-title="segment.state || 'Unknown state'"
+                            ></div>
+                        </t>
                         
                         <!-- Event markers -->
                         <div 
                             t-foreach="getProcessedEvents()" 
                             t-as="event" 
                             t-key="event_index"
-                            t-attf-class="timeline-event {{ event.level or '' }}"
+                            t-attf-class="timeline-event {{ event.level || 'info' }}"
                             t-attf-style="left: {{ event.position }}%;"
                             t-on-click="() => this.highlightEvent(event_index)"
                             t-on-mouseenter="(e) => this.showTooltip(event, e)"
@@ -49,8 +57,7 @@ export class TimelineViewer extends Component {
                             t-att-data-event-time="helpers.formatEventTime(event.original)"
                             t-att-data-event-level="event.level"
                             t-att-data-event-text="helpers.formatEventText(event.original)"
-                        >
-                        </div>
+                        ></div>
                         
                         <!-- Floating tooltip that follows mouse -->
                         <div t-if="state.activeTooltip" class="event-tooltip" t-att-style="state.tooltipStyle">
@@ -207,15 +214,110 @@ export class TimelineViewer extends Component {
 
         return events.map((event, index) => {
             const timestamp = this.getEventTimestamp(event);
+            // Ensure events have a level (default to info if not specified)
+            let level = event.level || '';
+
+            // Normalize levels to handle variations
+            if (level.includes('warn')) level = 'warning';
+            else if (level.includes('error')) level = 'error';
+            else if (level === '') level = 'info';
+
+            // Check for error messages in text if level isn't already error
+            const text = helpers.formatEventText(event);
+            if (level !== 'error' && (
+                text.includes('error') ||
+                text.includes('failed') ||
+                text.includes('failure') ||
+                text.includes('attempting to recover')
+            )) {
+                level = 'error';
+            }
+
+            // Extract connection state changes from event text
+            const connectionStateChange = this.extractConnectionState(event);
+
             return {
                 original: event,
                 timestamp,
                 position: this.calculateEventPosition(timestamp),
-                level: event.level || '',
+                level,
                 text: helpers.formatEventText(event),
-                index
+                index,
+                connectionState: connectionStateChange
             };
         });
+    }
+
+    // Extract connection state from event text
+    extractConnectionState(event) {
+        if (!event || !event.event) return null;
+
+        const text = helpers.formatEventText(event);
+
+        // Look for connection state changes
+        if (text.includes('connection state change:')) {
+            const statePart = text.split('connection state change:')[1].trim();
+            return statePart;
+        }
+
+        // Check for session deletion/closing events
+        if (text.includes('peer removed') ||
+            text.includes('session deleted') ||
+            text.includes('ending call')) {
+            return 'closed';
+        }
+
+        return null;
+    }
+
+    // Generate segments for the timeline based on connection states
+    getConnectionStateSegments() {
+        const events = this.getProcessedEvents();
+        if (!events || events.length === 0) return [{
+            state: 'new',  // Default to 'new' state instead of disconnected
+            startPos: 0,
+            width: 100
+        }];
+
+        const segments = [];
+        let currentState = 'new';  // Start with 'new' state
+        let lastPosition = 0;
+
+        // Find all state change events and create segments
+        events.forEach((event, index) => {
+            if (event.connectionState) {
+                // Add a segment from last position to current
+                if (index > 0) {
+                    segments.push({
+                        state: currentState,
+                        startPos: lastPosition,
+                        width: event.position - lastPosition
+                    });
+                }
+
+                // Update state for next segment
+                currentState = event.connectionState;
+                lastPosition = event.position;
+            }
+        });
+
+        // Add the final segment from last state change to end
+        segments.push({
+            state: currentState,
+            startPos: lastPosition,
+            width: 100 - lastPosition
+        });
+
+        // If no segments created, create a default one
+        if (segments.length === 0) {
+            segments.push({
+                state: 'new',
+                startPos: 0,
+                width: 100
+            });
+        }
+
+        return segments;
     }
 
     // Format time for timeline display
