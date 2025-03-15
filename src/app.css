@@ -1,4 +1,3 @@
-/* Main Styles for RTC Log Viewer */
 :root {
     --primary-color: #3498db;
     --secondary-color: #2980b9;
@@ -659,7 +658,6 @@ label {
     white-space: nowrap;
 }
 
-/* New visual timeline styles */
 .visual-timeline-container {
     margin: 20px 0;
     border: 1px solid var(--border-color);
@@ -780,7 +778,6 @@ label {
     padding: 10px 0;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .log-content {
         grid-template-columns: 1fr;
@@ -842,7 +839,6 @@ label {
     gap: 5px;
 }
 
-/* Adjustments to visual timeline for multi-session view */
 .session-row .visual-timeline-container {
     margin: 5px 0;
     padding: 10px 15px;
@@ -1077,7 +1073,6 @@ label {
     background-color: var(--error-color);
 }
 
-/* Improved zoom selector (more obvious draggable UI) */
 .zoom-selector {
     position: absolute;
     top: 0;
@@ -1145,7 +1140,6 @@ label {
     cursor: not-allowed;
 }
 
-/* Make events more clickable */
 .event-group {
     position: absolute;
     top: 10px;
@@ -1262,7 +1256,6 @@ body.dragging * {
     }
 }
 
-/* Make the timeline more responsive */
 @media (max-width: 768px) {
     .zoom-navigator {
         flex-direction: column;
@@ -1277,4 +1270,60 @@ body.dragging * {
         left: 5vw !important;
         /* Override inline style */
     }
+}
+
+/* Drop zone styles */
+.drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius);
+    padding: 30px;
+    text-align: center;
+    margin: 20px auto;
+    max-width: 600px;
+    transition: all 0.3s ease;
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.file-upload-container.drag-over .drop-zone {
+    border-color: var(--primary-color);
+    background-color: rgba(52, 152, 219, 0.1);
+    transform: scale(1.02);
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+}
+
+.drop-zone-prompt {
+    margin-bottom: 15px;
+}
+
+.drop-icon {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 10px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233498db' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='7 10 12 15 17 10'/%3E%3Cline x1='12' y1='15' x2='12' y2='3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
+.drop-zone-prompt p {
+    margin: 5px 0;
+    color: #666;
+}
+
+/* Make the drop zone responsive */
+@media (max-width: 768px) {
+    .drop-zone {
+        padding: 15px;
+    }
+
+    .drop-icon {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+.drop-zone:focus-within {
+    outline: 2px solid var(--primary-color);
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }

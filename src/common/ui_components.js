@@ -1,20 +1,18 @@
 const { Component, xml, useState } = owl;
 import helpers from '../utils/helpers.js';
 
-// Expandable section component
 export class ExpandableSection extends Component {
     static template = xml`
         <div t-attf-class="{{ props.className }}">
             <div t-attf-class="{{ props.headerClass }}">
                 <h4 t-esc="props.title"></h4>
-                <button 
+                <button
                     t-attf-class="{{ props.toggleClass }} {{ state.expanded ? 'expanded' : 'collapsed' }}"
                     t-on-click="toggleExpanded"
                 >
                     <t t-esc="state.expanded ? '▼' : '►'" />
                 </button>
             </div>
-            
             <div t-if="state.expanded" t-attf-class="{{ props.contentClass }}">
                 <t t-slot="default"/>
             </div>

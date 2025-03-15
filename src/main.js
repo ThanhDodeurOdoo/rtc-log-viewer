@@ -7,14 +7,28 @@ import { NoData } from './common/ui_components.js';
 export class Main extends Component {
     static template = xml`
         <div id="main" class="rtc-log-viewer">
-            <div class="file-upload-container">
+            <div 
+                t-attf-class="file-upload-container {{ state.isDragOver ? 'drag-over' : '' }}"
+                t-on-dragover="onDragOver"
+                t-on-dragleave="onDragLeave"
+                t-on-drop="onFileDrop"
+            >
                 <h2>RTC Log Viewer</h2>
                 <p>Upload a JSON log file to analyze the RTC connection data</p>
-                <div class="file-input">
-                    <input type="file" accept=".json" t-on-change="onFileChange"/>
-                    <button t-on-click="triggerFileInput">Choose File</button>
-                    <span t-if="state.fileName" class="file-name" t-esc="state.fileName"></span>
-                    <span t-else="" class="file-hint">No file chosen</span>
+                
+                <div class="drop-zone">
+                    <div class="drop-zone-prompt">
+                        <i class="drop-icon"></i>
+                        <p>Drag and drop your JSON log file here</p>
+                        <p>or</p>
+                    </div>
+                    
+                    <div class="file-input">
+                        <input type="file" accept=".json" t-on-change="onFileChange"/>
+                        <button t-on-click="triggerFileInput">Choose File</button>
+                        <span t-if="state.fileName" class="file-name" t-esc="state.fileName"></span>
+                        <span t-else="" class="file-hint">No file chosen</span>
+                    </div>
                 </div>
             </div>
             
@@ -23,15 +37,15 @@ export class Main extends Component {
                     <div class="system-info">
                         <h3>System Information</h3>
                         <table>
-                            <tr t-if="state.logs.odooInfo.server_version">
+                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.server_version">
                                 <td>Server Version:</td>
                                 <td t-esc="state.logs.odooInfo.server_version"></td>
                             </tr>
-                            <tr t-if="state.logs.odooInfo.db">
+                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.db">
                                 <td>Database:</td>
                                 <td t-esc="state.logs.odooInfo.db"></td>
                             </tr>
-                            <tr t-if="state.logs.odooInfo.isEnterprise !== undefined">
+                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.isEnterprise !== undefined">
                                 <td>Enterprise:</td>
                                 <td t-esc="state.logs.odooInfo.isEnterprise ? 'Yes' : 'No'"></td>
                             </tr>
@@ -107,7 +121,8 @@ export class Main extends Component {
         this.state = useState({
             logs: null,
             fileName: '',
-            activeView: 'timelines'
+            activeView: 'timelines',
+            isDragOver: false
         });
 
         this.viewOptions = [
@@ -118,18 +133,47 @@ export class Main extends Component {
         this.helpers = helpers;
     }
 
-    get snapshotKeys() {
-        if (!this.state.logs || !this.state.logs.snapshots) return [];
-        return Object.keys(this.state.logs.snapshots).sort();
-    }
-
     triggerFileInput() {
         document.querySelector('input[type="file"]').click();
     }
 
     onFileChange(event) {
         const file = event.target.files[0];
+        this.processFile(file);
+    }
+
+    onDragOver(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.state.isDragOver = true;
+    }
+
+    onDragLeave(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.state.isDragOver = false;
+    }
+
+    onFileDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.state.isDragOver = false;
+
+        const files = event.dataTransfer.files;
+        if (files.length === 0) return;
+
+        const file = files[0];
+        this.processFile(file);
+    }
+
+    processFile(file) {
         if (!file) return;
+
+        // Check if it's a JSON file
+        if (!file.name.toLowerCase().endsWith('.json')) {
+            alert('Please upload a JSON file.');
+            return;
+        }
 
         this.state.fileName = file.name;
 
@@ -152,5 +196,10 @@ export class Main extends Component {
 
     setActiveView(viewId) {
         this.state.activeView = viewId;
+    }
+
+    get snapshotKeys() {
+        if (!this.state.logs || !this.state.logs.snapshots) return [];
+        return Object.keys(this.state.logs.snapshots).sort();
     }
 }
