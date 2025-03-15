@@ -4,6 +4,7 @@ import { TimelineViewer } from './timeline_viewer.js';
 import { SnapshotViewer } from './snapshot_viewer.js';
 import { SessionTimeline } from './session_timeline.js';
 import { LogDetails } from './log_details.js';
+import helpers from './utils/helpers.js';
 
 export class Main extends Component {
     static template = xml`
@@ -129,7 +130,7 @@ export class Main extends Component {
                                 <label for="timeline-select">Select Timeline:</label>
                                 <select id="timeline-select" t-on-change="onTimelineSelect">
                                     <option value="">-- Select a timeline --</option>
-                                    <option t-foreach="timelineKeys" t-as="key" t-key="key" t-att-value="key" t-esc="formatTimelineDate(key)"></option>
+                                    <option t-foreach="timelineKeys" t-as="key" t-key="key" t-att-value="key" t-esc="helpers.formatTime(key)"></option>
                                 </select>
                                 
                                 <t t-if="state.selectedTimeline">
@@ -183,6 +184,7 @@ export class Main extends Component {
             { id: 'session-timeline', label: 'Session Timeline' },
             { id: 'raw', label: 'Raw Data' }
         ];
+        this.helpers = helpers;
     }
 
     get timelineKeys() {
@@ -224,17 +226,6 @@ export class Main extends Component {
             // Filter out any non-numeric IDs (like "hasTurn")
             return !isNaN(parseInt(id));
         });
-    }
-
-    formatTimelineDate(timelineKey) {
-        if (!timelineKey) return '';
-
-        try {
-            const date = new Date(timelineKey);
-            return date.toLocaleString();
-        } catch (e) {
-            return timelineKey;
-        }
     }
 
     triggerFileInput() {

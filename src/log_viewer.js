@@ -1,4 +1,5 @@
 const { Component, xml, useState } = owl;
+import helpers from './utils/helpers.js';
 
 export class LogViewer extends Component {
     static template = xml`
@@ -32,7 +33,7 @@ export class LogViewer extends Component {
                         <label for="timeline-select">Select Timeline:</label>
                         <select id="timeline-select" t-on-change="onTimelineSelect">
                             <option value="">-- Select a timeline --</option>
-                            <option t-foreach="timelineKeys" t-as="key" t-key="key" t-att-value="key" t-esc="formatTimelineDate(key)"></option>
+                            <option t-foreach="timelineKeys" t-as="key" t-key="key" t-att-value="key" t-esc="helpers.formatTime(key)"></option>
                         </select>
                         
                         <div t-if="state.selectedTimeline" class="session-timeline-container">
@@ -65,9 +66,9 @@ export class LogViewer extends Component {
                                             t-key="event_index"
                                             t-attf-class="event-item {{ event.level ? event.level : '' }}"
                                         >
-                                            <span class="event-time" t-esc="formatEventTime(event)"></span>
+                                            <span class="event-time" t-esc="helpers.formatEventTime(event)"></span>
                                             <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-esc="event.level"></span>
-                                            <span class="event-text" t-esc="formatEventText(event)"></span>
+                                            <span class="event-text" t-esc="helpers.formatEventText(event)"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -89,7 +90,7 @@ export class LogViewer extends Component {
                         <label for="snapshot-select">Select Snapshot:</label>
                         <select id="snapshot-select" t-on-change="onSnapshotSelect">
                             <option value="">-- Select a snapshot --</option>
-                            <option t-foreach="snapshotKeys" t-as="key" t-key="key" t-att-value="key" t-esc="formatSnapshotDate(key)"></option>
+                            <option t-foreach="snapshotKeys" t-as="key" t-key="key" t-att-value="key" t-esc="helpers.formatTime(key)"></option>
                         </select>
                         
                         <div t-if="state.selectedSnapshot" class="snapshot-sessions">
@@ -184,6 +185,8 @@ export class LogViewer extends Component {
             { id: 'session', label: 'Session Details' },
             { id: 'raw', label: 'Raw Data' }
         ];
+
+        this.helpers = helpers;
     }
 
     get timelineKeys() {
@@ -255,53 +258,6 @@ export class LogViewer extends Component {
         }
 
         return sessionId === timeline.selfSessionId?.toString();
-    }
-
-    formatTimelineDate(timelineKey) {
-        if (!timelineKey) return '';
-
-        try {
-            const date = new Date(timelineKey);
-            return date.toLocaleString();
-        } catch (e) {
-            return timelineKey;
-        }
-    }
-
-    formatSnapshotDate(snapshotKey) {
-        if (!snapshotKey) return '';
-
-        try {
-            const date = new Date(snapshotKey);
-            return date.toLocaleString();
-        } catch (e) {
-            return snapshotKey;
-        }
-    }
-
-    formatEventTime(event) {
-        if (!event || !event.event) return '';
-
-        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
-        if (timeMatch && timeMatch[1]) {
-            // Check if ISO format
-            if (timeMatch[1].includes('T')) {
-                const date = new Date(timeMatch[1]);
-                return date.toLocaleTimeString();
-            }
-            return timeMatch[1];
-        }
-        return '';
-    }
-
-    formatEventText(event) {
-        if (!event || !event.event) return '';
-
-        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
-        if (timeMatch) {
-            return event.event.substring(timeMatch[0].length).trim();
-        }
-        return event.event;
     }
 
     getSessionStateClass(session) {

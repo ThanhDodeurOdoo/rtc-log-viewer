@@ -1,4 +1,5 @@
 const { Component, xml, useState } = owl;
+import helpers from './utils/helpers.js';
 
 export class LogDetails extends Component {
     static template = xml`
@@ -19,9 +20,9 @@ export class LogDetails extends Component {
                 <div class="event-list">
                     <div t-foreach="sessionEvents" t-as="event" t-key="event_index" 
                          t-attf-class="event-item {{ event.level ? event.level : '' }}">
-                        <span class="event-time" t-esc="formatEventTime(event)"></span>
+                        <span class="event-time" t-esc="helpers.formatEventTime(event)"></span>
                         <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-esc="event.level"></span>
-                        <span t-esc="formatEventText(event)"></span>
+                        <span t-esc="helpers.formatEventText(event)"></span>
                     </div>
                 </div>
             </div>
@@ -145,6 +146,7 @@ export class LogDetails extends Component {
         this.state = useState({
             activeTab: 'overview'
         });
+        this.helpers = helpers;
     }
 
     get sessionEvents() {
@@ -163,31 +165,6 @@ export class LogDetails extends Component {
 
         const snapshots = this.props.sessionData?.snapshots;
         return snapshots ? snapshots[this.props.selectedSnapshot] : null;
-    }
-
-    formatEventTime(event) {
-        if (!event || !event.event) return '';
-
-        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
-        if (timeMatch && timeMatch[1]) {
-            // Check if ISO format
-            if (timeMatch[1].includes('T')) {
-                const date = new Date(timeMatch[1]);
-                return date.toLocaleTimeString();
-            }
-            return timeMatch[1];
-        }
-        return '';
-    }
-
-    formatEventText(event) {
-        if (!event || !event.event) return '';
-
-        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
-        if (timeMatch) {
-            return event.event.substring(timeMatch[0].length).trim();
-        }
-        return event.event;
     }
 
     getFormattedSnapshotTime() {
