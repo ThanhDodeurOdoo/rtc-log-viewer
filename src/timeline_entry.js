@@ -1,11 +1,11 @@
-const { Component, xml, useState } = owl;
+const { Component, xml, useState, useRef } = owl;
 import helpers from "./utils/helpers.js";
 import { ConnectionState, EventList } from "./common/ui_components.js";
 import { ZoomControl } from "./zoom_control.js";
 
 export class TimelineEntry extends Component {
     static template = xml`
-        <div class="timeline-entry">
+        <div class="timeline-entry" ref="root">
             <div class="timeline-header">
                 <h4 t-esc="getTimelineTitle()"></h4>
                 <button 
@@ -173,6 +173,7 @@ export class TimelineEntry extends Component {
         });
 
         this.helpers = helpers;
+        this.rootRef = useRef("root");
 
         // Bind methods
         this.handleZoomChange = this.handleZoomChange.bind(this);
@@ -744,7 +745,7 @@ export class TimelineEntry extends Component {
 
         // Find and scroll to the event in the list
         setTimeout(() => {
-            const eventElements = this.el.querySelectorAll(
+            const eventElements = this.rootRef.el?.querySelectorAll(
                 `.session-row[data-session-id="${sessionId}"] .event-item`,
             );
             if (!eventElements.length) {
