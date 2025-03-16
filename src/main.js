@@ -16,7 +16,7 @@ export class Main extends Component {
                 t-on-drop.prevent.stop="onFileDrop"
             >
                 <h2>RTC Log Viewer</h2>
-                <p>Upload a JSON log file to analyze the RTC connection data</p>
+                <p>Upload a JSON log file (<a target="_blank" href="https://www.odoo.com/knowledge/article/28833">from Odoo Discuss RTC</a>)</p>
                 
                 <div class="drop-zone">
                     <div class="drop-zone-prompt">
