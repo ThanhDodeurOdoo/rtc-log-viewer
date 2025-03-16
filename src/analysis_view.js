@@ -143,6 +143,7 @@ export class AnalysisView extends Component {
     }
 
     getRecommendation(issue) {
+        // TODO should use const codes instead of title
         switch (issue.title) {
             case "Fallback Mode Detected":
                 return "Check if the SFU server is running and accessible. Ensure firewall rules allow WebRTC traffic to the SFU server.";

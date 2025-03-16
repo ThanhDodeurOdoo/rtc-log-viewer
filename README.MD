@@ -4,4 +4,4 @@ Log viewer for Odoo RTC feature
 
 #Roadmap
 
-* Make heuristics for automatic analysis (show breakdown of issues and potential fixes)
+* Group issues from analysis
