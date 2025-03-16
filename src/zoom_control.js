@@ -298,12 +298,8 @@ export class ZoomControl extends Component {
     }
 
     zoomIn() {
-        if (this.state.zoomLevel >= 10) {
-            return;
-        } // Maximum zoom level
-
         const oldWidth = this.zoomWidthPercent;
-        const newLevel = Math.min(10, this.state.zoomLevel * 1.5);
+        const newLevel = this.state.zoomLevel * 1.5;
         const newWidth = 100 / newLevel;
 
         // Adjust start position to keep center point the same

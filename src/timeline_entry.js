@@ -3,6 +3,35 @@ import helpers from "./utils/helpers.js";
 import { ConnectionState, EventList } from "./common/ui_components.js";
 import { ZoomControl } from "./zoom_control.js";
 
+const CONSTANTS = {
+    // Thresholds for event clustering
+    VERY_CLOSE_THRESHOLD: 0.5, // Events closer than this % are definitely grouped
+    MIN_GROUP_SPACING: 4, // Minimum spacing between groups (visual width of a cluster)
+
+    // Constants for event visibility and positioning
+    POSITION_BEFORE_VISIBLE: -10, // Position value for events before visible area
+    POSITION_AFTER_VISIBLE: 110, // Position value for events after visible area
+
+    // Animation timings
+    HIGHLIGHT_DURATION: 2000, // Duration in ms for the highlight effect
+    SCROLL_DELAY: 50, // Delay for scrolling to highlighted event
+
+    // Default values
+    DEFAULT_STATE_SELF: undefined, // Default state for self session
+    DEFAULT_STATE_OTHER: "new", // Default state for other sessions
+};
+
+// CSS classes for different log levels
+const LOG_LEVEL_CLASSES = {
+    INFO: "info",
+    WARNING: "warning",
+    ERROR: "error",
+    WARN: "warn", // Alternative for warning
+};
+
+// Event text keywords that indicate errors
+const ERROR_KEYWORDS = ["error", "failed", "failure", "attempting to recover"];
+
 export class TimelineEntry extends Component {
     static template = xml`
         <div class="timeline-entry" ref="root">
@@ -15,7 +44,6 @@ export class TimelineEntry extends Component {
                     <t t-esc="state.expanded ? '▼' : '►'" />
                 </button>
             </div>
-            
             <div t-if="state.expanded" class="timeline-content">
                 <!-- Interactive zoom navigator -->
                 <ZoomControl
@@ -70,7 +98,7 @@ export class TimelineEntry extends Component {
                                         <!-- Single event or group indicator -->
                                         <div
                                             t-if="group.length === 1"
-                                            t-attf-class="timeline-event {{ group[0].level || 'info' }}"
+                                            t-attf-class="timeline-event {{ group[0].level || LOG_LEVEL_CLASSES.INFO }}"
                                             t-on-click="(e) => { e.stopPropagation(); this.highlightEvent(sessionId, group[0].index); }"
                                             t-on-mouseenter="(e) => this.showTooltip(group[0], e)"
                                             t-on-mouseleave="hideTooltip"
@@ -131,7 +159,7 @@ export class TimelineEntry extends Component {
                         t-attf-class="popup-event"
                         t-on-click="() => this.highlightEvent(state.activeEventSessionId, event.index)"
                     >
-                        <div t-attf-class="event-indicator {{ event.level || 'info' }}"></div>
+                        <div t-attf-class="event-indicator {{ event.level || LOG_LEVEL_CLASSES.INFO }}"></div>
                         <div class="event-content">
                             <span class="event-time" t-esc="helpers.formatEventTime(event.original)"></span>
                             <span class="event-text" t-esc="helpers.formatEventText(event.original)"></span>
@@ -168,6 +196,8 @@ export class TimelineEntry extends Component {
 
         this.helpers = helpers;
         this.rootRef = useRef("root");
+        this.LOG_LEVEL_CLASSES = LOG_LEVEL_CLASSES;
+        this.CONSTANTS = CONSTANTS;
 
         // Bind methods
         this.handleZoomChange = this.handleZoomChange.bind(this);
@@ -208,29 +238,30 @@ export class TimelineEntry extends Component {
         const viewportWidth = window.innerWidth;
         const popupWidth = 300; // Approximate width
         const popupHeight = 300; // Approximate max height
+        const padding = 10; // Padding from viewport edges
 
         // Position popup - try to center it horizontally relative to the clicked element
         let left = rect.left + rect.width / 2 - popupWidth / 2;
 
         // Keep popup in viewport horizontally
-        if (left < 10) {
-            left = 10;
+        if (left < padding) {
+            left = padding;
         }
-        if (left + popupWidth > viewportWidth - 10) {
-            left = viewportWidth - popupWidth - 10;
+        if (left + popupWidth > viewportWidth - padding) {
+            left = viewportWidth - popupWidth - padding;
         }
 
         // Position vertically - try above first, then below if not enough space
         let top;
         if (rect.top > popupHeight + 20) {
             // Enough space above
-            top = rect.top - popupHeight - 10;
+            top = rect.top - popupHeight - padding;
         } else if (viewportHeight - rect.bottom > popupHeight + 20) {
             // Enough space below
-            top = rect.bottom + 10;
+            top = rect.bottom + padding;
         } else {
             // Not enough space above or below, center on screen
-            top = Math.max(10, (viewportHeight - popupHeight) / 2);
+            top = Math.max(padding, (viewportHeight - popupHeight) / 2);
         }
 
         const popupStyle = `
@@ -238,7 +269,7 @@ export class TimelineEntry extends Component {
             left: ${left}px;
             top: ${top}px;
             z-index: 1000;
-            max-height: ${Math.min(popupHeight, viewportHeight - 20)}px;
+            max-height: ${Math.min(popupHeight, viewportHeight - 2 * padding)}px;
         `;
 
         this.state.eventGroupPopupStyle = popupStyle;
@@ -443,11 +474,11 @@ export class TimelineEntry extends Component {
 
         // Check if event is outside visible range
         if (timestamp < start) {
-            return -10;
-        } // Position before visible area
+            return CONSTANTS.POSITION_BEFORE_VISIBLE;
+        }
         if (timestamp > end) {
-            return 110;
-        } // Position after visible area
+            return CONSTANTS.POSITION_AFTER_VISIBLE;
+        }
 
         // Calculate position as percentage within visible range
         return ((timestamp - start) / (end - start)) * 100;
@@ -463,40 +494,27 @@ export class TimelineEntry extends Component {
         return events
             .map((event, index) => {
                 const timestamp = this.getEventTimestamp(event);
-                // Ensure events have a level (default to info if not specified)
                 let level = event.level || "";
-
-                // Normalize levels to handle variations
                 if (level.includes("warn")) {
-                    level = "warning";
+                    level = LOG_LEVEL_CLASSES.WARNING;
                 } else if (level.includes("error")) {
-                    level = "error";
+                    level = LOG_LEVEL_CLASSES.ERROR;
                 } else if (level === "") {
-                    level = "info";
+                    level = LOG_LEVEL_CLASSES.INFO;
                 }
-
                 // Check for error messages in text if level isn't already error
                 const text = helpers.formatEventText(event);
                 if (
-                    level !== "error" &&
-                    (text.includes("error") ||
-                        text.includes("failed") ||
-                        text.includes("failure") ||
-                        text.includes("attempting to recover"))
+                    level !== LOG_LEVEL_CLASSES.ERROR &&
+                    ERROR_KEYWORDS.some((keyword) => text.includes(keyword))
                 ) {
-                    level = "error";
+                    level = LOG_LEVEL_CLASSES.ERROR;
                 }
-
-                // Extract connection state changes from event text
                 const connectionStateChange = this.extractConnectionState(event);
-
                 const isVisible = this.isEventVisible(timestamp);
-
-                // Filter out non-visible events if requested
                 if (applyVisibilityFilter && !isVisible) {
                     return null;
                 }
-
                 return {
                     original: event,
                     timestamp,
@@ -533,10 +551,6 @@ export class TimelineEntry extends Component {
         // Sort events by position
         const sortedEvents = [...visibleEvents].sort((a, b) => a.position - b.position);
 
-        // Constants for clustering
-        const VERY_CLOSE_THRESHOLD = 0.5; // Events closer than this % are definitely grouped
-        const MIN_GROUP_SPACING = 4; // Minimum spacing between groups (visual width of a cluster)
-
         // Step 1: Create initial groups of events that are very close to each other
         const initialGroups = [];
         let currentGroup = [sortedEvents[0]];
@@ -546,7 +560,7 @@ export class TimelineEntry extends Component {
             const currentEvent = sortedEvents[i];
 
             // If events are extremely close, group them immediately
-            if (currentEvent.position - prevEvent.position <= VERY_CLOSE_THRESHOLD) {
+            if (currentEvent.position - prevEvent.position <= CONSTANTS.VERY_CLOSE_THRESHOLD) {
                 currentGroup.push(currentEvent);
             } else {
                 initialGroups.push([...currentGroup]);
@@ -572,9 +586,7 @@ export class TimelineEntry extends Component {
                 const currentGroupPos = this.getGroupPosition(groups[i]);
                 const nextGroupPos = this.getGroupPosition(groups[i + 1]);
 
-                // Calculate required space based on group sizes
-                // Larger groups need more space on each side (half of MIN_GROUP_SPACING)
-                if (nextGroupPos - currentGroupPos < MIN_GROUP_SPACING) {
+                if (nextGroupPos - currentGroupPos < CONSTANTS.MIN_GROUP_SPACING) {
                     needsMerging = true;
                     break;
                 }
@@ -662,7 +674,9 @@ export class TimelineEntry extends Component {
         if (!events || events.length === 0) {
             return [
                 {
-                    state: isSelfSession ? undefined : "new", // Use undefined for self sessions
+                    state: isSelfSession
+                        ? CONSTANTS.DEFAULT_STATE_SELF
+                        : CONSTANTS.DEFAULT_STATE_OTHER,
                     startPos: 0,
                     width: 100,
                 },
@@ -671,7 +685,9 @@ export class TimelineEntry extends Component {
 
         const segments = [];
         // Self sessions start with undefined state, other sessions start with "new"
-        let currentState = isSelfSession ? undefined : "new";
+        let currentState = isSelfSession
+            ? CONSTANTS.DEFAULT_STATE_SELF
+            : CONSTANTS.DEFAULT_STATE_OTHER;
         let lastPosition = 0;
 
         // Find all state change events and create segments
@@ -702,7 +718,7 @@ export class TimelineEntry extends Component {
         // If no segments created, create a default one
         if (segments.length === 0) {
             segments.push({
-                state: isSelfSession ? undefined : "new",
+                state: isSelfSession ? CONSTANTS.DEFAULT_STATE_SELF : CONSTANTS.DEFAULT_STATE_OTHER,
                 startPos: 0,
                 width: 100,
             });
@@ -819,9 +835,9 @@ export class TimelineEntry extends Component {
                 eventElement.classList.add("highlighted");
                 setTimeout(() => {
                     eventElement.classList.remove("highlighted");
-                }, 2000);
+                }, CONSTANTS.HIGHLIGHT_DURATION);
             }
-        }, 50);
+        }, CONSTANTS.SCROLL_DELAY);
     }
 
     showTooltip(event, e) {
