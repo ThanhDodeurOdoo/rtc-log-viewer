@@ -8,7 +8,7 @@ export class TimelineEntry extends Component {
         <div class="timeline-entry" ref="root">
             <div class="timeline-header">
                 <h4 t-esc="getTimelineTitle()"></h4>
-                <button 
+                <button
                     t-attf-class="timeline-toggle {{ state.expanded ? 'expanded' : 'collapsed' }}"
                     t-on-click="() => this.state.expanded = !this.state.expanded"
                 >
@@ -18,17 +18,17 @@ export class TimelineEntry extends Component {
             
             <div t-if="state.expanded" class="timeline-content">
                 <!-- Interactive zoom navigator -->
-                <ZoomControl 
-                    events="getAllEventsMinimal()" 
+                <ZoomControl
+                    events="getAllEventsMinimal()"
                     onZoomChange="handleZoomChange"
                     totalDuration="getTimelineTotalDuration()"
                 />
 
                 <!-- All sessions displayed as rows -->
                 <div class="timeline-sessions">
-                    <div 
-                        t-foreach="sortedSessionIds" 
-                        t-as="sessionId" 
+                    <div
+                        t-foreach="sortedSessionIds"
+                        t-as="sessionId"
                         t-key="sessionId"
                         t-attf-class="session-row {{ isSessionSelf(sessionId) ? 'self-session' : '' }}"
                         t-att-data-session-id="sessionId"
@@ -38,7 +38,7 @@ export class TimelineEntry extends Component {
                                 Session <t t-esc="sessionId"/>
                                 <span t-if="isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
                             </div>
-                            <button 
+                            <button
                                 t-attf-class="session-toggle {{ state.expandedSessions[sessionId] ? 'expanded' : 'collapsed' }}"
                                 t-on-click="() => this.toggleSessionDetails(sessionId)"
                             >
@@ -51,7 +51,7 @@ export class TimelineEntry extends Component {
                             <div class="visual-timeline">
                                 <!-- Connection state segments -->
                                 <t t-foreach="getVisibleConnectionStateSegments(sessionId)" t-as="segment" t-key="segment_index">
-                                    <div 
+                                    <div
                                         t-attf-class="timeline-segment {{ helpers.getConnectionStateClass(segment.state) }} {{ segment.state === undefined ? 'undefined-state' : '' }}"
                                         t-attf-style="left: {{ segment.startPos }}%; width: {{ segment.width }}%;"
                                         t-att-title="segment.state || 'Not connected to SFU'"
@@ -60,21 +60,21 @@ export class TimelineEntry extends Component {
                                 
                                 <!-- Event groups (clustered events) -->
                                 <t t-foreach="getEventGroups(sessionId)" t-as="group" t-key="group_index">
-                                    <div 
+                                    <div
                                         class="event-group"
                                         t-att-id="'event-group-' + sessionId + '-' + group_index"
                                         t-attf-style="left: {{ getGroupPosition(group) }}%;"
                                         t-on-click="(e) => this.toggleEventGroupPopup(group, e, sessionId, group_index)"
                                     >
                                         <!-- Single event or group indicator -->
-                                        <div 
+                                        <div
                                             t-if="group.length === 1"
                                             t-attf-class="timeline-event {{ group[0].level || 'info' }}"
                                             t-on-click="(e) => { e.stopPropagation(); this.highlightEvent(sessionId, group[0].index); }"
                                             t-on-mouseenter="(e) => this.showTooltip(group[0], e)"
                                             t-on-mouseleave="hideTooltip"
                                         ></div>
-                                        <div 
+                                        <div
                                             t-else=""
                                             class="event-cluster"
                                             t-esc="group.length"
@@ -91,20 +91,11 @@ export class TimelineEntry extends Component {
                                 <span class="property-name">Connection Step:</span>
                                 <span class="step-value" t-esc="getSessionInfo(sessionId).step"></span>
                             </div>
-                            
-                            <!-- Connection state -->
-                            <ConnectionState 
-                                t-if="getSessionInfo(sessionId).state" 
-                                state="getSessionInfo(sessionId).state" 
-                                stateClass="helpers.getConnectionStateClass(getSessionInfo(sessionId).state)" 
-                                label="'Connection State:'"
-                            />
-                            
                             <!-- Events log -->
                             <div class="events-log">
                                 <h5>Events</h5>
-                                <EventList 
-                                    events="getSessionEvents(sessionId)" 
+                                <EventList
+                                    events="getSessionEvents(sessionId)"
                                     noDataMessage="'No events recorded for this session'"
                                 />
                             </div>
@@ -132,9 +123,9 @@ export class TimelineEntry extends Component {
                     <button class="popup-close-btn" t-on-click="closeEventPopup">×</button>
                 </div>
                 <div class="sticky-popup-content">
-                    <div 
-                        t-foreach="state.activeEventGroup" 
-                        t-as="event" 
+                    <div
+                        t-foreach="state.activeEventGroup"
+                        t-as="event"
                         t-key="event.index"
                         t-attf-class="popup-event {{ event.level || 'info' }}"
                         t-on-click="() => this.highlightEvent(state.activeEventSessionId, event.index)"
