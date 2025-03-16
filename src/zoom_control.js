@@ -1,8 +1,27 @@
 const { Component, xml, useState } = owl;
 import helpers from "./utils/helpers.js";
 
-const MIN_WIDTH = 0.01;
-const SLIDE_OVERLAP_FACTOR = 0.5;
+// Constants for zoom control behavior
+const ZOOM = {
+    MIN_WIDTH_PERCENT: 0.01,
+    ZOOM_IN_FACTOR: 1.5,
+    ZOOM_OUT_FACTOR: 1.5,
+    SLIDE_OVERLAP_FACTOR: 0.5,
+};
+
+// Drag operation types
+const DRAG_TYPE = {
+    LEFT: "left",
+    RIGHT: "right",
+    MOVE: "move",
+};
+
+// Selectors for DOM elements
+const SELECTORS = {
+    ZOOM_SELECTOR: ".zoom-selector",
+    ZOOM_HANDLE: ".zoom-handle",
+    ZOOM_OVERVIEW_BAR: ".zoom-overview-bar",
+};
 
 export class ZoomControl extends Component {
     static template = xml`
@@ -11,62 +30,62 @@ export class ZoomControl extends Component {
                 <div class="zoom-overview-bar" t-on-mousedown="onBarClick">
                     <!-- Timeline with event markers -->
                     <div class="zoom-overview-timeline">
-                        <div 
-                            t-foreach="props.events" 
-                            t-as="event" 
+                        <div
+                            t-foreach="props.events"
+                            t-as="event"
                             t-key="event.id"
                             t-attf-class="zoom-overview-event {{ event.level || 'info' }}"
                             t-attf-style="left: {{ event.fullPosition }}%;"
                         ></div>
                     </div>
-                    
+
                     <!-- Zoom selector with handles -->
-                    <div 
-                        class="zoom-selector" 
+                    <div
+                        class="zoom-selector"
                         t-attf-style="left: {{ state.zoomStartPercent }}%; width: {{ zoomWidthPercent }}%;"
                         t-on-mousedown="onSelectorMouseDown"
                     >
-                        <div 
+                        <div
                             class="zoom-handle zoom-handle-left"
                             t-on-mousedown.stop="startLeftHandleDrag"
                         ></div>
-                        <div 
+                        <div
                             class="zoom-handle zoom-handle-right"
                             t-on-mousedown.stop="startRightHandleDrag"
                         ></div>
                     </div>
                 </div>
             </div>
-            
+
             <div class="zoom-controls">
-                <button 
-                    class="zoom-control-btn" 
+                <button
+                    class="zoom-control-btn"
                     t-on-click="slideLeft"
                     t-att-disabled="cannotSlideLeft"
                     title="Slide left"
                 >←</button>
-                <button 
-                    class="zoom-control-btn" 
+                <button
+                    class="zoom-control-btn"
                     t-att-disabled="isLowZoom"
                     t-on-click="resetZoom"
                 >Reset Zoom</button>
-                <button 
-                    class="zoom-control-btn" 
+                <button
+                    class="zoom-control-btn"
                     t-on-click="zoomOut"
                     t-att-disabled="isLowZoom"
                 >-</button>
-                <button 
-                    class="zoom-control-btn" 
+                <button
+                    class="zoom-control-btn"
                     t-on-click="zoomIn"
                 >+</button>
-                <button 
-                    class="zoom-control-btn" 
+                <button
+                    class="zoom-control-btn"
                     t-on-click="slideRight"
                     t-att-disabled="cannotSlideRight"
                     title="Slide right"
                 >→</button>
             </div>
-            
+
             <div t-if="props.totalDuration" class="zoom-duration">
                 Visible timespan: <span t-esc="helpers.formatDuration(getVisibleDuration())"></span>
             </div>
@@ -75,10 +94,11 @@ export class ZoomControl extends Component {
 
     setup() {
         this.state = useState({
-            zoomLevel: 1,
-            zoomStartPercent: 0,
+            zoomLevel: 1, // Start with no zoom
+            zoomStartPercent: 0, // Start at the beginning of the timeline
         });
 
+        // Bind methods
         this.onBarClick = this.onBarClick.bind(this);
         this.onSelectorMouseDown = this.onSelectorMouseDown.bind(this);
         this.startLeftHandleDrag = this.startLeftHandleDrag.bind(this);
@@ -118,7 +138,7 @@ export class ZoomControl extends Component {
     }
 
     onBarClick(ev) {
-        if (ev.target.closest(".zoom-selector")) {
+        if (ev.target.closest(SELECTORS.ZOOM_SELECTOR)) {
             return;
         }
 
@@ -138,7 +158,7 @@ export class ZoomControl extends Component {
     }
 
     onSelectorMouseDown(ev) {
-        if (ev.target.classList.contains("zoom-handle")) {
+        if (ev.target.classList.contains(SELECTORS.ZOOM_HANDLE.substring(1))) {
             return;
         }
 
@@ -148,7 +168,7 @@ export class ZoomControl extends Component {
         const rect = ev.currentTarget.parentElement.getBoundingClientRect();
 
         this.dragging = {
-            type: "move",
+            type: DRAG_TYPE.MOVE,
             startX: ev.clientX,
             startLeft: this.state.zoomStartPercent,
             startWidth: 100 / this.state.zoomLevel,
@@ -164,10 +184,10 @@ export class ZoomControl extends Component {
         ev.stopPropagation();
         ev.preventDefault();
 
-        const rect = ev.currentTarget.closest(".zoom-overview-bar").getBoundingClientRect();
+        const rect = ev.currentTarget.closest(SELECTORS.ZOOM_OVERVIEW_BAR).getBoundingClientRect();
 
         this.dragging = {
-            type: "left",
+            type: DRAG_TYPE.LEFT,
             startX: ev.clientX,
             startLeft: this.state.zoomStartPercent,
             startWidth: 100 / this.state.zoomLevel,
@@ -183,10 +203,10 @@ export class ZoomControl extends Component {
         ev.stopPropagation();
         ev.preventDefault();
 
-        const rect = ev.currentTarget.closest(".zoom-overview-bar").getBoundingClientRect();
+        const rect = ev.currentTarget.closest(SELECTORS.ZOOM_OVERVIEW_BAR).getBoundingClientRect();
 
         this.dragging = {
-            type: "right",
+            type: DRAG_TYPE.RIGHT,
             startX: ev.clientX,
             startLeft: this.state.zoomStartPercent,
             startWidth: 100 / this.state.zoomLevel,
@@ -209,7 +229,7 @@ export class ZoomControl extends Component {
         const deltaPercent = (deltaX / this.dragging.barWidth) * 100;
 
         switch (this.dragging.type) {
-            case "left": {
+            case DRAG_TYPE.LEFT: {
                 // Dragging left handle - adjust start position and width
                 let newStartPercent = this.dragging.startLeft + deltaPercent;
                 let newWidthPercent = this.dragging.startWidth - deltaPercent;
@@ -220,10 +240,10 @@ export class ZoomControl extends Component {
                     newWidthPercent = this.dragging.startLeft + this.dragging.startWidth;
                 }
 
-                if (newWidthPercent < MIN_WIDTH) {
-                    newWidthPercent = MIN_WIDTH;
+                if (newWidthPercent < ZOOM.MIN_WIDTH_PERCENT) {
+                    newWidthPercent = ZOOM.MIN_WIDTH_PERCENT;
                     newStartPercent =
-                        this.dragging.startLeft + this.dragging.startWidth - MIN_WIDTH;
+                        this.dragging.startLeft + this.dragging.startWidth - ZOOM.MIN_WIDTH_PERCENT;
                 }
 
                 if (newStartPercent + newWidthPercent > 100) {
@@ -235,14 +255,14 @@ export class ZoomControl extends Component {
                 break;
             }
 
-            case "right": {
+            case DRAG_TYPE.RIGHT: {
                 // Dragging right handle - adjust width
                 let newWidthPercent = this.dragging.startWidth + deltaPercent;
 
                 // Enforce constraints
-                if (newWidthPercent < MIN_WIDTH) {
-                    newWidthPercent = MIN_WIDTH;
-                } // Minimum width
+                if (newWidthPercent < ZOOM.MIN_WIDTH_PERCENT) {
+                    newWidthPercent = ZOOM.MIN_WIDTH_PERCENT;
+                }
 
                 if (this.state.zoomStartPercent + newWidthPercent > 100) {
                     newWidthPercent = 100 - this.state.zoomStartPercent;
@@ -252,7 +272,7 @@ export class ZoomControl extends Component {
                 break;
             }
 
-            case "move": {
+            case DRAG_TYPE.MOVE: {
                 // Dragging entire selector - move without changing size
                 let newStartPercent = this.dragging.startLeft + deltaPercent;
                 const widthPercent = 100 / this.state.zoomLevel;
@@ -299,7 +319,7 @@ export class ZoomControl extends Component {
 
     zoomIn() {
         const oldWidth = this.zoomWidthPercent;
-        const newLevel = this.state.zoomLevel * 1.5;
+        const newLevel = this.state.zoomLevel * ZOOM.ZOOM_IN_FACTOR;
         const newWidth = 100 / newLevel;
 
         // Adjust start position to keep center point the same
@@ -319,7 +339,7 @@ export class ZoomControl extends Component {
         }
 
         const oldWidth = this.zoomWidthPercent;
-        const newLevel = Math.max(1, this.state.zoomLevel / 1.5);
+        const newLevel = Math.max(1, this.state.zoomLevel / ZOOM.ZOOM_OUT_FACTOR);
         const newWidth = 100 / newLevel;
 
         // Adjust start position to keep center point the same
@@ -346,7 +366,7 @@ export class ZoomControl extends Component {
             return;
         }
 
-        const slideAmount = this.zoomWidthPercent * SLIDE_OVERLAP_FACTOR;
+        const slideAmount = this.zoomWidthPercent * ZOOM.SLIDE_OVERLAP_FACTOR;
         this.state.zoomStartPercent = Math.max(0, this.state.zoomStartPercent - slideAmount);
         this.notifyZoomChange();
     }
@@ -360,7 +380,7 @@ export class ZoomControl extends Component {
             return;
         }
 
-        const slideAmount = this.zoomWidthPercent * SLIDE_OVERLAP_FACTOR;
+        const slideAmount = this.zoomWidthPercent * ZOOM.SLIDE_OVERLAP_FACTOR;
         const maxStart = 100 - this.zoomWidthPercent;
         this.state.zoomStartPercent = Math.min(maxStart, this.state.zoomStartPercent + slideAmount);
         this.notifyZoomChange();
