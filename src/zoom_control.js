@@ -1,4 +1,5 @@
 const { Component, xml, useState } = owl;
+import helpers from './utils/helpers.js';
 
 export class ZoomControl extends Component {
     static template = xml`
@@ -50,6 +51,10 @@ export class ZoomControl extends Component {
                     t-on-click="zoomIn"
                 >+</button>
             </div>
+            
+            <div t-if="props.totalDuration" class="zoom-duration">
+                Visible timespan: <span t-esc="helpers.formatDuration(getVisibleDuration())"></span>
+            </div>
         </div>
     `;
 
@@ -65,6 +70,7 @@ export class ZoomControl extends Component {
         this.startRightHandleDrag = this.startRightHandleDrag.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onMouseUp = this.onMouseUp.bind(this);
+        this.helpers = helpers;
     }
 
     get isLowZoom() {
@@ -73,6 +79,14 @@ export class ZoomControl extends Component {
 
     get zoomWidthPercent() {
         return Math.min(100, 100 / this.state.zoomLevel);
+    }
+
+    /**
+     * @returns {number} Duration of the visible range in ms
+     */
+    getVisibleDuration() {
+        if (!this.props.totalDuration) return 0;
+        return this.props.totalDuration / this.state.zoomLevel;
     }
 
     onBarClick(ev) {

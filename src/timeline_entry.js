@@ -21,6 +21,7 @@ export class TimelineEntry extends Component {
                 <ZoomControl 
                     events="getAllEventsMinimal()" 
                     onZoomChange="handleZoomChange"
+                    totalDuration="getTimelineTotalDuration()"
                 />
 
                 <!-- All sessions displayed as rows -->
@@ -734,5 +735,17 @@ export class TimelineEntry extends Component {
             document.removeEventListener('mousemove', this.tooltipMoveHandler);
             this.tooltipMoveHandler = null;
         }
+    }
+
+    /**
+     * @returns {number} Total duration of the timeline in milliseconds
+     */
+    getTimelineTotalDuration() {
+        const timelineData = this.props.timelineData;
+        if (!timelineData) return 0;
+
+        const start = new Date(timelineData.start);
+        const end = new Date(timelineData.end || new Date().toISOString());
+        return end.getTime() - start.getTime();
     }
 }

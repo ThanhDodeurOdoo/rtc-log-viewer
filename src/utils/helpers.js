@@ -80,6 +80,28 @@ export function getNetworkState(state) {
 }
 
 /**
+ * Format a duration in milliseconds to a human-readable string
+ * @param {number} ms - Duration in milliseconds
+ * @returns {string} Formatted duration string
+ */
+export function formatDuration(ms) {
+    if (!ms || ms < 0) return '0s';
+
+    const seconds = Math.floor(ms / 1000);
+    const milliseconds = (ms % 1000) / 10;
+    if (seconds < 1) return `${(ms / 1000).toFixed(2)}s`;
+    if (seconds < 60) return `${seconds}.${milliseconds.toFixed(0)}s`;
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) return `${minutes}m ${remainingSeconds}.${milliseconds.toFixed(0)}s`;
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m ${remainingSeconds}.${milliseconds.toFixed(0)}s`;
+}
+
+/**
  * Calculate a visible time range based on zoom level and pan position
  * @param {string} startTime - ISO string of timeline start time
  * @param {string} endTime - ISO string of timeline end time
@@ -177,6 +199,7 @@ export default {
     getConnectionStateClass,
     getAudioState,
     getNetworkState,
+    formatDuration,
     calculateVisibleTimeRange,
     groupCloseEvents
 };
