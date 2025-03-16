@@ -368,7 +368,7 @@ export class TimelineEntry extends Component {
 
         try {
             const date = new Date(this.props.timelineKey);
-            const formattedDate = date.toLocaleString();
+            const formattedDate = date.toISOString();
 
             const channelId = this.props.timelineData.channelId;
             const selfSessionId = this.props.timelineData.selfSessionId;
@@ -762,13 +762,8 @@ export class TimelineEntry extends Component {
         if (!time) {
             return "";
         }
-
-        try {
-            const date = new Date(time);
-            return date.toLocaleTimeString();
-        } catch {
-            return time.toString();
-        }
+        const date = new Date(time);
+        return date.toISOString().split("T")[1].replace("Z", "");
     }
 
     toggleEventGroupPopup(group, e, sessionId, groupIndex) {

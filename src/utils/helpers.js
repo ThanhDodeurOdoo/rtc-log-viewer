@@ -5,12 +5,8 @@ export function formatEventTime(event) {
 
     const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
     if (timeMatch && timeMatch[1]) {
-        // Check if ISO format
-        if (timeMatch[1].includes("T")) {
-            const date = new Date(timeMatch[1]);
-            return date.toLocaleTimeString();
-        }
-        return timeMatch[1];
+        const date = new Date(timeMatch[1]);
+        return date.toISOString().split("T")[1].replace("Z", "");
     }
     return "";
 }
@@ -34,7 +30,7 @@ export function formatTime(timelineKey) {
 
     try {
         const date = new Date(timelineKey);
-        return date.toLocaleString();
+        return date.toISOString();
     } catch {
         return timelineKey;
     }

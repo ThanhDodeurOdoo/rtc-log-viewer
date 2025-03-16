@@ -152,7 +152,7 @@ export class SnapshotViewer extends Component {
 
         try {
             const date = new Date(key);
-            return `Snapshot: ${date.toLocaleString()}`;
+            return `Snapshot: ${date.toISOString()}`;
         } catch {
             return key;
         }
