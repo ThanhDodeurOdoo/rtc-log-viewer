@@ -1083,7 +1083,7 @@ label {
 .zoom-handle {
     position: absolute;
     top: 50%;
-    width: 12px;
+    width: 4px;
     height: 24px;
     background-color: var(--primary-color);
     border-radius: 3px;

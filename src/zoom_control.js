@@ -1,6 +1,7 @@
 const { Component, xml, useState } = owl;
 import helpers from "./utils/helpers.js";
 
+const MIN_WIDTH = 0.1;
 export class ZoomControl extends Component {
     static template = xml`
         <div class="zoom-navigator">
@@ -194,10 +195,10 @@ export class ZoomControl extends Component {
                     newWidthPercent = this.dragging.startLeft + this.dragging.startWidth;
                 }
 
-                if (newWidthPercent < 5) {
-                    // Minimum width of 5%
-                    newWidthPercent = 5;
-                    newStartPercent = this.dragging.startLeft + this.dragging.startWidth - 5;
+                if (newWidthPercent < MIN_WIDTH) {
+                    newWidthPercent = MIN_WIDTH;
+                    newStartPercent =
+                        this.dragging.startLeft + this.dragging.startWidth - MIN_WIDTH;
                 }
 
                 if (newStartPercent + newWidthPercent > 100) {
@@ -214,8 +215,8 @@ export class ZoomControl extends Component {
                 let newWidthPercent = this.dragging.startWidth + deltaPercent;
 
                 // Enforce constraints
-                if (newWidthPercent < 5) {
-                    newWidthPercent = 5;
+                if (newWidthPercent < MIN_WIDTH) {
+                    newWidthPercent = MIN_WIDTH;
                 } // Minimum width
 
                 if (this.state.zoomStartPercent + newWidthPercent > 100) {
