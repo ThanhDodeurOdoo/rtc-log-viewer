@@ -1,6 +1,8 @@
+// src/main.js
 const { Component, xml, useState } = owl;
 import { TimelineViewer } from "./timeline_viewer.js";
 import { SnapshotViewer } from "./snapshot_viewer.js";
+import { AnalysisView } from "./analysis_view.js"; // Import the new component
 import helpers from "./utils/helpers.js";
 import { NoData } from "./common/ui_components.js";
 
@@ -68,6 +70,12 @@ export class Main extends Component {
                 </div>
                 
                 <div class="main-view">
+                    <!-- Analysis View (NEW) -->
+                    <AnalysisView 
+                        t-if="state.activeView === 'analysis'" 
+                        logs="state.logs"
+                    />
+                    
                     <!-- Timelines View -->
                     <TimelineViewer 
                         t-if="state.activeView === 'timelines'" 
@@ -115,17 +123,19 @@ export class Main extends Component {
         TimelineViewer,
         SnapshotViewer,
         NoData,
+        AnalysisView, // Add the new component
     };
 
     setup() {
         this.state = useState({
             logs: null,
             fileName: "",
-            activeView: "timelines",
+            activeView: "analysis", // Set analysis as the default view
             isDragOver: false,
         });
 
         this.viewOptions = [
+            { id: "analysis", label: "Analysis" }, // Add analysis as the first option
             { id: "timelines", label: "Timelines" },
             { id: "snapshots", label: "Snapshots" },
             { id: "raw", label: "Raw Data" },

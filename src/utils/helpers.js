@@ -1,3 +1,5 @@
+// src/utils/helpers.js
+
 export function formatEventTime(event) {
     if (!event || !event.event) {
         return "";
@@ -211,6 +213,90 @@ export function groupCloseEvents(events, threshold = 5) {
     return groups;
 }
 
+/**
+ * Check if a log event contains specific text
+ * @param {Object} log - Log event object
+ * @param {string} pattern - Text pattern to search for
+ * @returns {boolean} True if the pattern is found
+ */
+export function eventContains(log, pattern) {
+    if (!log || !log.event) {
+        return false;
+    }
+
+    const text = formatEventText(log);
+    return text.includes(pattern);
+}
+
+/**
+ * Get the severity level of a log event based on its content
+ * @param {Object} log - Log event object
+ * @returns {string} Severity level: 'info', 'warning', or 'error'
+ */
+export function getEventSeverity(log) {
+    if (!log) {
+        return "info";
+    }
+
+    if (log.level === "error" || log.level === "ERROR") {
+        return "error";
+    }
+
+    if (
+        log.level === "warn" ||
+        log.level === "warning" ||
+        log.level === "WARN" ||
+        log.level === "WARNING"
+    ) {
+        return "warning";
+    }
+
+    // Check for error keywords in the event text
+    const text = formatEventText(log);
+    const errorKeywords = ["error", "failed", "failure", "exception", "crash"];
+    const warningKeywords = ["warning", "attempting to recover", "disconnect"];
+
+    if (errorKeywords.some((keyword) => text.toLowerCase().includes(keyword))) {
+        return "error";
+    }
+
+    if (warningKeywords.some((keyword) => text.toLowerCase().includes(keyword))) {
+        return "warning";
+    }
+
+    return "info";
+}
+
+/**
+ * Extract connection state from event text
+ * @param {Object} log - Log event object
+ * @returns {string|null} Connection state or null if not found
+ */
+export function extractConnectionState(log) {
+    if (!log || !log.event) {
+        return null;
+    }
+
+    const text = formatEventText(log);
+
+    // Look for connection state changes
+    if (text.includes("connection state change:")) {
+        const statePart = text.split("connection state change:")[1].trim();
+        return statePart;
+    }
+
+    // Check for session deletion/closing events
+    if (
+        text.includes("peer removed") ||
+        text.includes("session deleted") ||
+        text.includes("ending call")
+    ) {
+        return "closed";
+    }
+
+    return null;
+}
+
 export default {
     formatEventTime,
     formatEventText,
@@ -222,4 +308,7 @@ export default {
     formatDuration,
     calculateVisibleTimeRange,
     groupCloseEvents,
+    eventContains,
+    getEventSeverity,
+    extractConnectionState,
 };

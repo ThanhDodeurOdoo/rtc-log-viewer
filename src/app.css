@@ -1286,3 +1286,140 @@ body.dragging * {
         height: 40px;
     }
 }
+
+/* Add these styles to src/app.css */
+
+/* Analysis view styles */
+.analysis-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.analysis-content {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    padding: var(--space-lg);
+}
+
+.analysis-summary {
+    margin-bottom: var(--space-lg);
+}
+
+.issue-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.issue-item {
+    border: var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.issue-item.error {
+    border-left: 4px solid var(--error-color);
+}
+
+.issue-item.warning {
+    border-left: 4px solid var(--warning-color);
+}
+
+.issue-item.info {
+    border-left: 4px solid var(--primary-color);
+}
+
+.issue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--light-bg);
+}
+
+.issue-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.issue-icon {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.issue-icon.error {
+    background-color: var(--error-color);
+}
+
+.issue-icon.warning {
+    background-color: var(--warning-color);
+}
+
+.issue-icon.info {
+    background-color: var(--primary-color);
+}
+
+.issue-description {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: var(--border);
+}
+
+.issue-details {
+    padding: var(--space-md);
+    background-color: var(--light-bg);
+}
+
+.issue-metadata {
+    margin-bottom: var(--space-sm);
+    display: flex;
+    gap: var(--space-md);
+}
+
+.metadata-label {
+    font-weight: var(--font-weight-bold);
+    min-width: 100px;
+}
+
+.issue-technical-details {
+    margin-top: var(--space-md);
+    background-color: var(--medium-bg);
+    padding: var(--space-sm);
+    border-radius: var(--radius);
+}
+
+.issue-technical-details pre {
+    margin: 0;
+    overflow-x: auto;
+    font-size: var(--font-size-sm);
+}
+
+.issue-recommendation {
+    margin-top: var(--space-md);
+    background-color: rgba(39, 174, 96, 0.1);
+    padding: var(--space-sm);
+    border-radius: var(--radius);
+    border-left: 4px solid var(--accent-color);
+}
+
+.issue-recommendation h6 {
+    margin-top: 0;
+    color: var(--accent-color);
+}
+
+.no-issues-found {
+    text-align: center;
+    padding: var(--space-xl);
+    background-color: rgba(39, 174, 96, 0.1);
+    border-radius: var(--radius);
+}
+
+.loading-analysis {
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--text-secondary);
+}
