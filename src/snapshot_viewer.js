@@ -5,11 +5,11 @@ import { ConnectionState, SessionProperties } from "./common/ui_components.js";
 export class SnapshotViewer extends Component {
     static template = xml`
         <div class="snapshot-viewer">
-            <div class="snapshot-header">
+            <div class="snapshot-header" t-on-click="() => this.state.expanded = !this.state.expanded">
                 <h4 t-esc="getSnapshotTitle()"></h4>
                 <button 
                     t-attf-class="snapshot-toggle {{ state.expanded ? 'expanded' : 'collapsed' }}"
-                    t-on-click="() => this.state.expanded = !this.state.expanded"
+                    t-on-click.stop="() => this.state.expanded = !this.state.expanded"
                 >
                 <t t-esc="state.expanded ? '▼' : '►'" />
                 </button>
@@ -75,14 +75,14 @@ export class SnapshotViewer extends Component {
                             t-key="session.id"
                             class="session-item"
                         >
-                            <div class="session-header">
+                            <div class="session-header" t-on-click="() => this.toggleSession(session.id)">
                                 <h6>
                                     Session ID: <span t-esc="session.id"></span>
                                     <span t-if="session.isSelf" class="self-indicator">(Self)</span>
                                 </h6>
                                 <button 
                                     t-attf-class="session-toggle {{ state.expandedSessions[session.id] ? 'expanded' : 'collapsed' }}"
-                                    t-on-click="() => this.toggleSession(session.id)"
+                                    t-on-click.stop="() => this.toggleSession(session.id)"
                                 >
                                     <t t-esc="state.expandedSessions[session.id] ? '▼' : '►'" />
                                 </button>

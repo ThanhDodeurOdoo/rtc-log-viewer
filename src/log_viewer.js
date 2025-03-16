@@ -103,14 +103,14 @@ export class LogViewer extends Component {
                                     t-key="session.id"
                                     class="session-entry"
                                 >
-                                    <div class="session-header">
+                                    <div class="session-header" t-on-click="() => this.toggleSession(session.id)">
                                         <h5>
                                             Session ID: <span t-esc="session.id" />
                                             <span t-if="session.isSelf" class="self-indicator">(Self)</span>
                                         </h5>
                                         <button 
                                             t-attf-class="session-toggle {{ state.expandedSessions[session.id] ? 'expanded' : 'collapsed' }}"
-                                            t-on-click="() => this.toggleSession(session.id)"
+                                            t-on-click.stop="() => this.toggleSession(session.id)"
                                         >
                                             <t t-esc="state.expandedSessions[session.id] ? '▼' : '►'" />
                                         </button>

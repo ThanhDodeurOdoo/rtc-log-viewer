@@ -35,11 +35,11 @@ const ERROR_KEYWORDS = ["error", "failed", "failure", "attempting to recover"];
 export class TimelineEntry extends Component {
     static template = xml`
         <div class="timeline-entry" ref="root">
-            <div class="timeline-header">
+            <div class="timeline-header" t-on-click="() => this.state.expanded = !this.state.expanded">
                 <h4 t-esc="getTimelineTitle()"></h4>
                 <button
                     t-attf-class="timeline-toggle {{ state.expanded ? 'expanded' : 'collapsed' }}"
-                    t-on-click="() => this.state.expanded = !this.state.expanded"
+                    t-on-click.stop="() => this.state.expanded = !this.state.expanded"
                 >
                     <t t-esc="state.expanded ? '▼' : '►'" />
                 </button>
@@ -61,7 +61,7 @@ export class TimelineEntry extends Component {
                         t-attf-class="session-row {{ isSessionSelf(sessionId) ? 'self-session' : '' }}"
                         t-att-data-session-id="sessionId"
                     >
-                        <div class="session-row-header">
+                        <div class="session-row-header" t-on-click="() => this.toggleSessionDetails(sessionId)">
                             <div class="session-title">
                                 <div t-attf-class="state-indicator {{ helpers.getConnectionStateClass(getSessionLastState(sessionId)) }}"></div>
                                 Session <t t-esc="sessionId"/>
@@ -69,7 +69,7 @@ export class TimelineEntry extends Component {
                             </div>
                             <button
                                 t-attf-class="session-toggle {{ state.expandedSessions[sessionId] ? 'expanded' : 'collapsed' }}"
-                                t-on-click="() => this.toggleSessionDetails(sessionId)"
+                                t-on-click.stop="() => this.toggleSessionDetails(sessionId)"
                             >
                                 <t t-esc="state.expandedSessions[sessionId] ? '▼' : '►'" />
                             </button>

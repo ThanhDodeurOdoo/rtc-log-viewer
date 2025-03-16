@@ -246,7 +246,6 @@ button {
     border: var(--border);
     border-radius: var(--radius);
     overflow: visible;
-    margin-bottom: var(--space-lg);
 }
 
 /* Header components */
@@ -257,6 +256,7 @@ button {
 .sticky-popup-header {
     display: flex;
     justify-content: space-between;
+    cursor: pointer;
     align-items: center;
     padding: var(--header-padding);
     background-color: var(--medium-bg);
@@ -493,6 +493,7 @@ button {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
     padding: var(--space-sm) var(--space-md);
     background-color: var(--light-bg);
     border-bottom: 1px solid transparent;
@@ -1334,6 +1335,7 @@ body.dragging * {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
     padding: var(--space-sm) var(--space-md);
     background-color: var(--light-bg);
 }

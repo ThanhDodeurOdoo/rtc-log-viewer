@@ -43,7 +43,7 @@ export class AnalysisView extends Component {
                             t-key="issue_index"
                             t-attf-class="issue-item {{ issue.type }}"
                         >
-                            <div class="issue-header">
+                            <div class="issue-header" t-on-click="() => this.toggleIssueDetails(issue_index)">
                                 <h5 class="issue-title">
                                     <span t-attf-class="issue-icon {{ issue.type }}"></span>
                                     <span t-esc="issue.title"></span>
@@ -51,7 +51,7 @@ export class AnalysisView extends Component {
                                 
                                 <button
                                     t-attf-class="issue-toggle {{ state.expandedIssues[issue_index] ? 'expanded' : 'collapsed' }}"
-                                    t-on-click="() => this.toggleIssueDetails(issue_index)"
+                                    t-on-click.stop="() => this.toggleIssueDetails(issue_index)"
                                 >
                                     <t t-esc="state.expandedIssues[issue_index] ? '▼' : '►'" />
                                 </button>
