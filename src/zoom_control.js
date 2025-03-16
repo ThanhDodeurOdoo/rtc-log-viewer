@@ -1,7 +1,9 @@
 const { Component, xml, useState } = owl;
 import helpers from "./utils/helpers.js";
 
-const MIN_WIDTH = 0.1;
+const MIN_WIDTH = 0.01;
+const SLIDE_OVERLAP_FACTOR = 0.5;
+
 export class ZoomControl extends Component {
     static template = xml`
         <div class="zoom-navigator">
@@ -39,6 +41,12 @@ export class ZoomControl extends Component {
             <div class="zoom-controls">
                 <button 
                     class="zoom-control-btn" 
+                    t-on-click="slideLeft"
+                    t-att-disabled="cannotSlideLeft"
+                    title="Slide left"
+                >←</button>
+                <button 
+                    class="zoom-control-btn" 
                     t-att-disabled="isLowZoom"
                     t-on-click="resetZoom"
                 >Reset Zoom</button>
@@ -51,6 +59,12 @@ export class ZoomControl extends Component {
                     class="zoom-control-btn" 
                     t-on-click="zoomIn"
                 >+</button>
+                <button 
+                    class="zoom-control-btn" 
+                    t-on-click="slideRight"
+                    t-att-disabled="cannotSlideRight"
+                    title="Slide right"
+                >→</button>
             </div>
             
             <div t-if="props.totalDuration" class="zoom-duration">
@@ -71,6 +85,8 @@ export class ZoomControl extends Component {
         this.startRightHandleDrag = this.startRightHandleDrag.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onMouseUp = this.onMouseUp.bind(this);
+        this.slideLeft = this.slideLeft.bind(this);
+        this.slideRight = this.slideRight.bind(this);
         this.helpers = helpers;
     }
 
@@ -80,6 +96,15 @@ export class ZoomControl extends Component {
 
     get zoomWidthPercent() {
         return Math.min(100, 100 / this.state.zoomLevel);
+    }
+
+    get cannotSlideLeft() {
+        return this.state.zoomStartPercent <= 0;
+    }
+
+    get cannotSlideRight() {
+        const maxStart = 100 - this.zoomWidthPercent;
+        return this.state.zoomStartPercent >= maxStart;
     }
 
     /**
@@ -314,5 +339,34 @@ export class ZoomControl extends Component {
         } else {
             this.notifyZoomChange();
         }
+    }
+
+    /**
+     * Slides the zoom window to the left by a percentage of the window width
+     * with a small overlap to ensure continuity
+     */
+    slideLeft() {
+        if (this.cannotSlideLeft) {
+            return;
+        }
+
+        const slideAmount = this.zoomWidthPercent * SLIDE_OVERLAP_FACTOR;
+        this.state.zoomStartPercent = Math.max(0, this.state.zoomStartPercent - slideAmount);
+        this.notifyZoomChange();
+    }
+
+    /**
+     * Slides the zoom window to the right by a percentage of the window width
+     * with a small overlap to ensure continuity
+     */
+    slideRight() {
+        if (this.cannotSlideRight) {
+            return;
+        }
+
+        const slideAmount = this.zoomWidthPercent * SLIDE_OVERLAP_FACTOR;
+        const maxStart = 100 - this.zoomWidthPercent;
+        this.state.zoomStartPercent = Math.min(maxStart, this.state.zoomStartPercent + slideAmount);
+        this.notifyZoomChange();
     }
 }
