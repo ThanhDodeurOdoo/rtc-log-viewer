@@ -750,6 +750,16 @@ label {
     z-index: 1;
 }
 
+/* For segments with undefined state (self sessions before SFU connection) */
+.timeline-segment.undefined-state {
+    background-color: var(--medium-bg);
+    /* Use a neutral color for undefined state */
+    background-image: linear-gradient(90deg, var(--medium-bg) 50%, transparent 50%);
+    background-size: 10px 4px;
+    /* 10px wide stripes */
+    background-repeat: repeat-x;
+}
+
 .timeline-segment.connected {
     background-color: var(--status-connected);
 }

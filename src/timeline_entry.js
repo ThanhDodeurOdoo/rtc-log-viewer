@@ -52,10 +52,9 @@ export class TimelineEntry extends Component {
                                 <!-- Connection state segments -->
                                 <t t-foreach="getVisibleConnectionStateSegments(sessionId)" t-as="segment" t-key="segment_index">
                                     <div 
-                                        class="timeline-segment" 
-                                        t-attf-class="timeline-segment {{ helpers.getConnectionStateClass(segment.state) }}"
+                                        t-attf-class="timeline-segment {{ helpers.getConnectionStateClass(segment.state) }} {{ segment.state === undefined ? 'undefined-state' : '' }}"
                                         t-attf-style="left: {{ segment.startPos }}%; width: {{ segment.width }}%;"
-                                        t-att-title="segment.state || 'Unknown state'"
+                                        t-att-title="segment.state || 'Not connected to SFU'"
                                     ></div>
                                 </t>
                                 
@@ -607,10 +606,12 @@ export class TimelineEntry extends Component {
     // Generate segments for the timeline based on connection states
     getConnectionStateSegments(sessionId) {
         const events = this.getProcessedEvents(sessionId, false); // Get all events without filtering for position calculation
+        const isSelfSession = this.isSessionSelf(sessionId);
+
         if (!events || events.length === 0) {
             return [
                 {
-                    state: "new", // Default to 'new' state instead of disconnected
+                    state: isSelfSession ? undefined : "new", // Use undefined for self sessions
                     startPos: 0,
                     width: 100,
                 },
@@ -618,7 +619,8 @@ export class TimelineEntry extends Component {
         }
 
         const segments = [];
-        let currentState = "new"; // Start with 'new' state
+        // Self sessions start with undefined state, other sessions start with "new"
+        let currentState = isSelfSession ? undefined : "new";
         let lastPosition = 0;
 
         // Find all state change events and create segments
@@ -649,7 +651,7 @@ export class TimelineEntry extends Component {
         // If no segments created, create a default one
         if (segments.length === 0) {
             segments.push({
-                state: "new",
+                state: isSelfSession ? undefined : "new",
                 startPos: 0,
                 width: 100,
             });
