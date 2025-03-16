@@ -35,6 +35,7 @@ export class TimelineEntry extends Component {
                     >
                         <div class="session-row-header">
                             <div class="session-title">
+                                <div t-attf-class="state-indicator {{ helpers.getConnectionStateClass(getSessionLastState(sessionId)) }}"></div>
                                 Session <t t-esc="sessionId"/>
                                 <span t-if="isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
                             </div>
@@ -127,11 +128,14 @@ export class TimelineEntry extends Component {
                         t-foreach="state.activeEventGroup"
                         t-as="event"
                         t-key="event.index"
-                        t-attf-class="popup-event {{ event.level || 'info' }}"
+                        t-attf-class="popup-event"
                         t-on-click="() => this.highlightEvent(state.activeEventSessionId, event.index)"
                     >
-                        <span class="event-time" t-esc="helpers.formatEventTime(event.original)"></span>
-                        <span class="event-text" t-esc="helpers.formatEventText(event.original)"></span>
+                        <div t-attf-class="event-indicator {{ event.level || 'info' }}"></div>
+                        <div class="event-content">
+                            <span class="event-time" t-esc="helpers.formatEventTime(event.original)"></span>
+                            <span class="event-text" t-esc="helpers.formatEventText(event.original)"></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -807,5 +811,14 @@ export class TimelineEntry extends Component {
         const start = new Date(timelineData.start);
         const end = new Date(timelineData.end || new Date().toISOString());
         return end.getTime() - start.getTime();
+    }
+
+    getSessionLastState(sessionId) {
+        const segments = this.getConnectionStateSegments(sessionId);
+        if (!segments || segments.length === 0) {
+            return "";
+        }
+        const lastSegment = segments[segments.length - 1];
+        return lastSegment.state;
     }
 }

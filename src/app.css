@@ -941,7 +941,7 @@ label {
 /* Popup event styles */
 .popup-event {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     padding: var(--space-sm) var(--space-md);
     cursor: pointer;
     border-bottom: var(--border);
@@ -971,27 +971,40 @@ label {
     max-width: 300px;
 }
 
-.popup-event::before {
-    content: "";
-    display: block;
+.popup-event {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    border-bottom: var(--border);
+    transition: background-color var(--transition-speed);
+}
+
+.event-indicator {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    float: left;
     margin-right: var(--space-sm);
-    margin-top: 5px;
+    flex-shrink: 0;
 }
 
-.popup-event.info::before {
+.event-indicator.info {
     background-color: var(--primary-color);
 }
 
-.popup-event.warning::before {
+.event-indicator.warning {
     background-color: var(--warning-color);
 }
 
-.popup-event.error::before {
+.event-indicator.error {
     background-color: var(--error-color);
+}
+
+.event-content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
 }
 
 /* Zoom controls */
