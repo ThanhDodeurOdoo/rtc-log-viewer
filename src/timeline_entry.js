@@ -1,7 +1,7 @@
-const { Component, xml, useState, useRef } = owl;
-import helpers from './utils/helpers.js';
-import { ConnectionState, EventList } from './common/ui_components.js';
-import { ZoomControl } from './zoom_control.js';
+const { Component, xml, useState } = owl;
+import helpers from "./utils/helpers.js";
+import { ConnectionState, EventList } from "./common/ui_components.js";
+import { ZoomControl } from "./zoom_control.js";
 
 export class TimelineEntry extends Component {
     static template = xml`
@@ -154,7 +154,7 @@ export class TimelineEntry extends Component {
     static components = {
         ConnectionState,
         EventList,
-        ZoomControl
+        ZoomControl,
     };
 
     setup() {
@@ -162,14 +162,14 @@ export class TimelineEntry extends Component {
             expanded: false,
             expandedSessions: {},
             activeTooltip: null,
-            tooltipStyle: '',
+            tooltipStyle: "",
             // Interactive zoom and popup state
-            zoomLevel: 1,           // 1 = no zoom (100% view)
-            zoomStartPercent: 0,    // Start position of zoom window (0-100%)
+            zoomLevel: 1, // 1 = no zoom (100% view)
+            zoomStartPercent: 0, // Start position of zoom window (0-100%)
             activeEventGroup: null, // Currently displayed event group
             activeEventSessionId: null, // Session ID for the active event group
             clickedEventElement: null, // Store the actual clicked element
-            eventGroupPopupStyle: '',
+            eventGroupPopupStyle: "",
         });
 
         this.helpers = helpers;
@@ -180,11 +180,11 @@ export class TimelineEntry extends Component {
     }
 
     mounted() {
-        window.addEventListener('resize', this.handleResize);
+        window.addEventListener("resize", this.handleResize);
     }
 
     willUnmount() {
-        window.removeEventListener('resize', this.handleResize);
+        window.removeEventListener("resize", this.handleResize);
     }
 
     // Handle window resize to reposition popups
@@ -204,7 +204,9 @@ export class TimelineEntry extends Component {
     repositionPopup() {
         // Use the stored clicked element reference directly
         const element = this.state.clickedEventElement;
-        if (!element) return;
+        if (!element) {
+            return;
+        }
 
         const rect = element.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
@@ -212,15 +214,13 @@ export class TimelineEntry extends Component {
         const popupWidth = 300; // Approximate width
         const popupHeight = 300; // Approximate max height
 
-        // Calculate scroll position
-        const scrollX = window.scrollX || window.pageXOffset;
-        const scrollY = window.scrollY || window.pageYOffset;
-
         // Position popup - try to center it horizontally relative to the clicked element
-        let left = rect.left + (rect.width / 2) - (popupWidth / 2);
+        let left = rect.left + rect.width / 2 - popupWidth / 2;
 
         // Keep popup in viewport horizontally
-        if (left < 10) left = 10;
+        if (left < 10) {
+            left = 10;
+        }
         if (left + popupWidth > viewportWidth - 10) {
             left = viewportWidth - popupWidth - 10;
         }
@@ -251,10 +251,13 @@ export class TimelineEntry extends Component {
 
     get sessionIds() {
         const timelineData = this.props.timelineData;
-        if (!timelineData || !timelineData.entriesBySessionId) return [];
+        if (!timelineData || !timelineData.entriesBySessionId) {
+            return [];
+        }
 
-        return Object.keys(timelineData.entriesBySessionId)
-            .filter(key => key !== 'hasTurn' && !isNaN(parseInt(key)));
+        return Object.keys(timelineData.entriesBySessionId).filter(
+            (key) => key !== "hasTurn" && !isNaN(parseInt(key)),
+        );
     }
 
     get sortedSessionIds() {
@@ -263,8 +266,12 @@ export class TimelineEntry extends Component {
             const aIsSelf = this.isSessionSelf(a);
             const bIsSelf = this.isSessionSelf(b);
 
-            if (aIsSelf && !bIsSelf) return -1;
-            if (!aIsSelf && bIsSelf) return 1;
+            if (aIsSelf && !bIsSelf) {
+                return -1;
+            }
+            if (!aIsSelf && bIsSelf) {
+                return 1;
+            }
             return parseInt(a) - parseInt(b);
         });
     }
@@ -282,7 +289,7 @@ export class TimelineEntry extends Component {
                     ...event,
                     id: eventId++, // Add unique identifier
                     sessionId,
-                    fullPosition: this.calculateFullPosition(event.timestamp) // Calculate position in full timeline
+                    fullPosition: this.calculateFullPosition(event.timestamp), // Calculate position in full timeline
                 });
             }
         }
@@ -292,15 +299,21 @@ export class TimelineEntry extends Component {
 
     // Calculate position in full timeline (0-100%)
     calculateFullPosition(timestamp) {
-        if (!timestamp) return 0;
+        if (!timestamp) {
+            return 0;
+        }
 
         const timelineData = this.props.timelineData;
-        if (!timelineData || !timelineData.start || !timelineData.end) return 0;
+        if (!timelineData || !timelineData.start || !timelineData.end) {
+            return 0;
+        }
 
         const start = new Date(timelineData.start).getTime();
         const end = new Date(timelineData.end || new Date().toISOString()).getTime();
 
-        if (!start || !end || end <= start) return 0;
+        if (!start || !end || end <= start) {
+            return 0;
+        }
 
         return ((timestamp - start) / (end - start)) * 100;
     }
@@ -323,7 +336,9 @@ export class TimelineEntry extends Component {
     }
 
     getTimelineTitle() {
-        if (!this.props.timelineData) return "Timeline";
+        if (!this.props.timelineData) {
+            return "Timeline";
+        }
 
         try {
             const date = new Date(this.props.timelineKey);
@@ -333,7 +348,7 @@ export class TimelineEntry extends Component {
             const selfSessionId = this.props.timelineData.selfSessionId;
 
             return `Timeline: Channel ${channelId} - Session ${selfSessionId} - ${formattedDate}`;
-        } catch (e) {
+        } catch {
             return `Timeline: ${this.props.timelineKey}`;
         }
     }
@@ -343,14 +358,18 @@ export class TimelineEntry extends Component {
     }
 
     isSessionSelf(sessionId) {
-        if (!this.props.timelineData) return false;
+        if (!this.props.timelineData) {
+            return false;
+        }
         return sessionId === this.props.timelineData.selfSessionId?.toString();
     }
 
     // Get the visible time range based on zoom level and position
     getVisibleTimeRange() {
         const timelineData = this.props.timelineData;
-        if (!timelineData) return { visibleStartTime: new Date(), visibleEndTime: new Date() };
+        if (!timelineData) {
+            return { visibleStartTime: new Date(), visibleEndTime: new Date() };
+        }
 
         const fullStartTime = new Date(timelineData.start);
         const fullEndTime = new Date(timelineData.end || new Date().toISOString());
@@ -362,7 +381,7 @@ export class TimelineEntry extends Component {
                 visibleStartTime: fullStartTime,
                 visibleEndTime: fullEndTime,
                 fullStartTime,
-                fullEndTime
+                fullEndTime,
             };
         }
 
@@ -380,27 +399,31 @@ export class TimelineEntry extends Component {
             visibleStartTime,
             visibleEndTime,
             fullStartTime,
-            fullEndTime
+            fullEndTime,
         };
     }
 
     // Extract timestamp from event for timeline positioning
     getEventTimestamp(event) {
-        if (!event || !event.event) return null;
+        if (!event || !event.event) {
+            return null;
+        }
 
-        const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
+        const timeMatch = event.event.match(
+            /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/,
+        );
         if (timeMatch && timeMatch[1]) {
             // If it's ISO format, parse date
-            if (timeMatch[1].includes('T')) {
+            if (timeMatch[1].includes("T")) {
                 return new Date(timeMatch[1]).getTime();
             }
             // For simple time format, use a base date and set the time
             try {
-                const timeParts = timeMatch[1].split(':').map(Number);
+                const timeParts = timeMatch[1].split(":").map(Number);
                 const now = new Date();
                 now.setHours(timeParts[0] || 0, timeParts[1] || 0, timeParts[2] || 0, 0);
                 return now.getTime();
-            } catch (e) {
+            } catch {
                 return new Date().getTime();
             }
         }
@@ -411,17 +434,25 @@ export class TimelineEntry extends Component {
 
     // Calculate position along timeline (0-100%) considering zoom
     calculateEventPosition(timestamp) {
-        if (!timestamp) return 0;
+        if (!timestamp) {
+            return 0;
+        }
 
         const { visibleStartTime, visibleEndTime } = this.getVisibleTimeRange();
         const start = visibleStartTime.getTime();
         const end = visibleEndTime.getTime();
 
-        if (!start || !end || end <= start) return 0;
+        if (!start || !end || end <= start) {
+            return 0;
+        }
 
         // Check if event is outside visible range
-        if (timestamp < start) return -10; // Position before visible area
-        if (timestamp > end) return 110;   // Position after visible area
+        if (timestamp < start) {
+            return -10;
+        } // Position before visible area
+        if (timestamp > end) {
+            return 110;
+        } // Position after visible area
 
         // Calculate position as percentage within visible range
         return ((timestamp - start) / (end - start)) * 100;
@@ -430,55 +461,66 @@ export class TimelineEntry extends Component {
     // Process events for visual timeline
     getProcessedEvents(sessionId, applyVisibilityFilter = true) {
         const events = this.getSessionEvents(sessionId);
-        if (!events || events.length === 0) return [];
+        if (!events || events.length === 0) {
+            return [];
+        }
 
-        return events.map((event, index) => {
-            const timestamp = this.getEventTimestamp(event);
-            // Ensure events have a level (default to info if not specified)
-            let level = event.level || '';
+        return events
+            .map((event, index) => {
+                const timestamp = this.getEventTimestamp(event);
+                // Ensure events have a level (default to info if not specified)
+                let level = event.level || "";
 
-            // Normalize levels to handle variations
-            if (level.includes('warn')) level = 'warning';
-            else if (level.includes('error')) level = 'error';
-            else if (level === '') level = 'info';
+                // Normalize levels to handle variations
+                if (level.includes("warn")) {
+                    level = "warning";
+                } else if (level.includes("error")) {
+                    level = "error";
+                } else if (level === "") {
+                    level = "info";
+                }
 
-            // Check for error messages in text if level isn't already error
-            const text = helpers.formatEventText(event);
-            if (level !== 'error' && (
-                text.includes('error') ||
-                text.includes('failed') ||
-                text.includes('failure') ||
-                text.includes('attempting to recover')
-            )) {
-                level = 'error';
-            }
+                // Check for error messages in text if level isn't already error
+                const text = helpers.formatEventText(event);
+                if (
+                    level !== "error" &&
+                    (text.includes("error") ||
+                        text.includes("failed") ||
+                        text.includes("failure") ||
+                        text.includes("attempting to recover"))
+                ) {
+                    level = "error";
+                }
 
-            // Extract connection state changes from event text
-            const connectionStateChange = this.extractConnectionState(event);
+                // Extract connection state changes from event text
+                const connectionStateChange = this.extractConnectionState(event);
 
-            const isVisible = this.isEventVisible(timestamp);
+                const isVisible = this.isEventVisible(timestamp);
 
-            // Filter out non-visible events if requested
-            if (applyVisibilityFilter && !isVisible) {
-                return null;
-            }
+                // Filter out non-visible events if requested
+                if (applyVisibilityFilter && !isVisible) {
+                    return null;
+                }
 
-            return {
-                original: event,
-                timestamp,
-                position: this.calculateEventPosition(timestamp),
-                level,
-                text: helpers.formatEventText(event),
-                index,
-                connectionState: connectionStateChange,
-                isVisible
-            };
-        }).filter(event => event !== null);
+                return {
+                    original: event,
+                    timestamp,
+                    position: this.calculateEventPosition(timestamp),
+                    level,
+                    text: helpers.formatEventText(event),
+                    index,
+                    connectionState: connectionStateChange,
+                    isVisible,
+                };
+            })
+            .filter((event) => event !== null);
     }
 
     // Check if an event is within the visible time range
     isEventVisible(timestamp) {
-        if (!timestamp) return false;
+        if (!timestamp) {
+            return false;
+        }
 
         const { visibleStartTime, visibleEndTime } = this.getVisibleTimeRange();
         const start = visibleStartTime.getTime();
@@ -490,7 +532,9 @@ export class TimelineEntry extends Component {
     // Group events that are close to each other
     getEventGroups(sessionId) {
         const visibleEvents = this.getProcessedEvents(sessionId);
-        if (!visibleEvents.length) return [];
+        if (!visibleEvents.length) {
+            return [];
+        }
 
         // Sort events by position
         const sortedEvents = [...visibleEvents].sort((a, b) => a.position - b.position);
@@ -525,7 +569,9 @@ export class TimelineEntry extends Component {
 
     // Get position for a group (average of all events in group)
     getGroupPosition(group) {
-        if (!group || group.length === 0) return 0;
+        if (!group || group.length === 0) {
+            return 0;
+        }
 
         // Use the middle event in the group for positioning
         return group[Math.floor(group.length / 2)].position;
@@ -533,21 +579,25 @@ export class TimelineEntry extends Component {
 
     // Extract connection state from event text
     extractConnectionState(event) {
-        if (!event || !event.event) return null;
+        if (!event || !event.event) {
+            return null;
+        }
 
         const text = helpers.formatEventText(event);
 
         // Look for connection state changes
-        if (text.includes('connection state change:')) {
-            const statePart = text.split('connection state change:')[1].trim();
+        if (text.includes("connection state change:")) {
+            const statePart = text.split("connection state change:")[1].trim();
             return statePart;
         }
 
         // Check for session deletion/closing events
-        if (text.includes('peer removed') ||
-            text.includes('session deleted') ||
-            text.includes('ending call')) {
-            return 'closed';
+        if (
+            text.includes("peer removed") ||
+            text.includes("session deleted") ||
+            text.includes("ending call")
+        ) {
+            return "closed";
         }
 
         return null;
@@ -556,14 +606,18 @@ export class TimelineEntry extends Component {
     // Generate segments for the timeline based on connection states
     getConnectionStateSegments(sessionId) {
         const events = this.getProcessedEvents(sessionId, false); // Get all events without filtering for position calculation
-        if (!events || events.length === 0) return [{
-            state: 'new',  // Default to 'new' state instead of disconnected
-            startPos: 0,
-            width: 100
-        }];
+        if (!events || events.length === 0) {
+            return [
+                {
+                    state: "new", // Default to 'new' state instead of disconnected
+                    startPos: 0,
+                    width: 100,
+                },
+            ];
+        }
 
         const segments = [];
-        let currentState = 'new';  // Start with 'new' state
+        let currentState = "new"; // Start with 'new' state
         let lastPosition = 0;
 
         // Find all state change events and create segments
@@ -574,7 +628,7 @@ export class TimelineEntry extends Component {
                     segments.push({
                         state: currentState,
                         startPos: lastPosition,
-                        width: event.position - lastPosition
+                        width: event.position - lastPosition,
                     });
                 }
 
@@ -588,15 +642,15 @@ export class TimelineEntry extends Component {
         segments.push({
             state: currentState,
             startPos: lastPosition,
-            width: 100 - lastPosition
+            width: 100 - lastPosition,
         });
 
         // If no segments created, create a default one
         if (segments.length === 0) {
             segments.push({
-                state: 'new',
+                state: "new",
                 startPos: 0,
-                width: 100
+                width: 100,
             });
         }
 
@@ -611,34 +665,38 @@ export class TimelineEntry extends Component {
         }
 
         // Filter segments that are outside visible range and adjust positions
-        return segments.filter(segment => {
-            // Skip segments that are completely outside visible range
-            return !(segment.startPos > 100 || segment.startPos + segment.width < 0);
-        }).map(segment => {
-            // Clamp segment to visible range
-            let adjustedStart = Math.max(0, segment.startPos);
-            let adjustedWidth = segment.width;
+        return segments
+            .filter((segment) => {
+                // Skip segments that are completely outside visible range
+                return !(segment.startPos > 100 || segment.startPos + segment.width < 0);
+            })
+            .map((segment) => {
+                // Clamp segment to visible range
+                const adjustedStart = Math.max(0, segment.startPos);
+                let adjustedWidth = segment.width;
 
-            // Reduce width if segment extends beyond visible area
-            if (adjustedStart + adjustedWidth > 100) {
-                adjustedWidth = 100 - adjustedStart;
-            }
+                // Reduce width if segment extends beyond visible area
+                if (adjustedStart + adjustedWidth > 100) {
+                    adjustedWidth = 100 - adjustedStart;
+                }
 
-            return {
-                ...segment,
-                startPos: adjustedStart,
-                width: adjustedWidth
-            };
-        });
+                return {
+                    ...segment,
+                    startPos: adjustedStart,
+                    width: adjustedWidth,
+                };
+            });
     }
 
     formatTimelineTime(time) {
-        if (!time) return '';
+        if (!time) {
+            return "";
+        }
 
         try {
             const date = new Date(time);
             return date.toLocaleTimeString();
-        } catch (e) {
+        } catch {
             return time.toString();
         }
     }
@@ -686,21 +744,27 @@ export class TimelineEntry extends Component {
 
         // Find and scroll to the event in the list
         setTimeout(() => {
-            const eventElements = this.el.querySelectorAll(`.session-row[data-session-id="${sessionId}"] .event-item`);
-            if (!eventElements.length) return;
+            const eventElements = this.el.querySelectorAll(
+                `.session-row[data-session-id="${sessionId}"] .event-item`,
+            );
+            if (!eventElements.length) {
+                return;
+            }
 
             // Get the correct event element - handle zero-based indexing
-            if (index >= eventElements.length) index = eventElements.length - 1;
+            if (index >= eventElements.length) {
+                index = eventElements.length - 1;
+            }
 
             const eventElement = eventElements[index];
             if (eventElement) {
                 // Scroll the event into view
-                eventElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                eventElement.scrollIntoView({ behavior: "smooth", block: "center" });
 
                 // Add and then remove highlight
-                eventElement.classList.add('highlighted');
+                eventElement.classList.add("highlighted");
                 setTimeout(() => {
-                    eventElement.classList.remove('highlighted');
+                    eventElement.classList.remove("highlighted");
                 }, 2000);
             }
         }, 50);
@@ -709,9 +773,9 @@ export class TimelineEntry extends Component {
     showTooltip(event, e) {
         // Get event information
         this.state.activeTooltip = {
-            time: event.original ? helpers.formatEventTime(event.original) : '',
-            level: event.level || '',
-            text: event.original ? helpers.formatEventText(event.original) : ''
+            time: event.original ? helpers.formatEventTime(event.original) : "",
+            level: event.level || "",
+            text: event.original ? helpers.formatEventText(event.original) : "",
         };
 
         // Update tooltip position
@@ -726,13 +790,13 @@ export class TimelineEntry extends Component {
 
         // Track mouse movement for tooltip
         this.tooltipMoveHandler = updatePosition;
-        document.addEventListener('mousemove', this.tooltipMoveHandler);
+        document.addEventListener("mousemove", this.tooltipMoveHandler);
     }
 
     hideTooltip() {
         this.state.activeTooltip = null;
         if (this.tooltipMoveHandler) {
-            document.removeEventListener('mousemove', this.tooltipMoveHandler);
+            document.removeEventListener("mousemove", this.tooltipMoveHandler);
             this.tooltipMoveHandler = null;
         }
     }
@@ -742,7 +806,9 @@ export class TimelineEntry extends Component {
      */
     getTimelineTotalDuration() {
         const timelineData = this.props.timelineData;
-        if (!timelineData) return 0;
+        if (!timelineData) {
+            return 0;
+        }
 
         const start = new Date(timelineData.start);
         const end = new Date(timelineData.end || new Date().toISOString());

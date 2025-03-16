@@ -1,7 +1,7 @@
-const { Component, xml, useState } = owl;
-import helpers from './utils/helpers.js';
-import { NoData } from './common/ui_components.js';
-import { TimelineEntry } from './timeline_entry.js';
+const { Component, xml } = owl;
+import helpers from "./utils/helpers.js";
+import { NoData } from "./common/ui_components.js";
+import { TimelineEntry } from "./timeline_entry.js";
 
 export class TimelineViewer extends Component {
     static template = xml`
@@ -31,7 +31,7 @@ export class TimelineViewer extends Component {
 
     static components = {
         NoData,
-        TimelineEntry
+        TimelineEntry,
     };
 
     setup() {
@@ -39,7 +39,9 @@ export class TimelineViewer extends Component {
     }
 
     get timelineKeys() {
-        if (!this.props.logs || !this.props.logs.timelines) return [];
+        if (!this.props.logs || !this.props.logs.timelines) {
+            return [];
+        }
         return Object.keys(this.props.logs.timelines).sort();
     }
 }

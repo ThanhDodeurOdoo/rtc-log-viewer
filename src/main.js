@@ -1,8 +1,8 @@
 const { Component, xml, useState } = owl;
-import { TimelineViewer } from './timeline_viewer.js';
-import { SnapshotViewer } from './snapshot_viewer.js';
-import helpers from './utils/helpers.js';
-import { NoData } from './common/ui_components.js';
+import { TimelineViewer } from "./timeline_viewer.js";
+import { SnapshotViewer } from "./snapshot_viewer.js";
+import helpers from "./utils/helpers.js";
+import { NoData } from "./common/ui_components.js";
 
 export class Main extends Component {
     static template = xml`
@@ -120,15 +120,15 @@ export class Main extends Component {
     setup() {
         this.state = useState({
             logs: null,
-            fileName: '',
-            activeView: 'timelines',
-            isDragOver: false
+            fileName: "",
+            activeView: "timelines",
+            isDragOver: false,
         });
 
         this.viewOptions = [
-            { id: 'timelines', label: 'Timelines' },
-            { id: 'snapshots', label: 'Snapshots' },
-            { id: 'raw', label: 'Raw Data' }
+            { id: "timelines", label: "Timelines" },
+            { id: "snapshots", label: "Snapshots" },
+            { id: "raw", label: "Raw Data" },
         ];
         this.helpers = helpers;
     }
@@ -154,18 +154,22 @@ export class Main extends Component {
         this.state.isDragOver = false;
 
         const files = event.dataTransfer.files;
-        if (files.length === 0) return;
+        if (files.length === 0) {
+            return;
+        }
 
         const file = files[0];
         this.processFile(file);
     }
 
     processFile(file) {
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         // Check if it's a JSON file
-        if (!file.name.toLowerCase().endsWith('.json')) {
-            alert('Please upload a JSON file.');
+        if (!file.name.toLowerCase().endsWith(".json")) {
+            alert("Please upload a JSON file.");
             return;
         }
 
@@ -176,9 +180,8 @@ export class Main extends Component {
             try {
                 const logs = JSON.parse(e.target.result);
                 this.processParsedLogs(logs);
-            } catch (error) {
-                console.error('Error parsing log file:', error);
-                alert('Error parsing the log file. Please ensure it is a valid JSON file.');
+            } catch {
+                alert("Error parsing the log file. Please ensure it is a valid JSON file.");
             }
         };
         reader.readAsText(file);
@@ -193,7 +196,9 @@ export class Main extends Component {
     }
 
     get snapshotKeys() {
-        if (!this.state.logs || !this.state.logs.snapshots) return [];
+        if (!this.state.logs || !this.state.logs.snapshots) {
+            return [];
+        }
         return Object.keys(this.state.logs.snapshots).sort();
     }
 }

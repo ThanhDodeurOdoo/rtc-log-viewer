@@ -1,6 +1,6 @@
 const { Component, xml, useState } = owl;
-import helpers from './utils/helpers.js';
-import { ConnectionState, SessionProperties } from './common/ui_components.js';
+import helpers from "./utils/helpers.js";
+import { ConnectionState, SessionProperties } from "./common/ui_components.js";
 
 export class SnapshotViewer extends Component {
     static template = xml`
@@ -114,7 +114,7 @@ export class SnapshotViewer extends Component {
     setup() {
         this.state = useState({
             expanded: false,
-            expandedSessions: {}
+            expandedSessions: {},
         });
         this.helpers = helpers;
     }
@@ -139,10 +139,12 @@ export class SnapshotViewer extends Component {
     }
 
     get hasServerErrors() {
-        return this.snapshotData.server &&
+        return (
+            this.snapshotData.server &&
             this.snapshotData.server.errors &&
             Array.isArray(this.snapshotData.server.errors) &&
-            this.snapshotData.server.errors.length > 0;
+            this.snapshotData.server.errors.length > 0
+        );
     }
 
     getSnapshotTitle() {
@@ -151,7 +153,7 @@ export class SnapshotViewer extends Component {
         try {
             const date = new Date(key);
             return `Snapshot: ${date.toLocaleString()}`;
-        } catch (e) {
+        } catch {
             return key;
         }
     }

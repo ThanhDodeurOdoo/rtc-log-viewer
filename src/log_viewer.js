@@ -1,13 +1,13 @@
 const { Component, xml, useState } = owl;
-import helpers from './utils/helpers.js';
-import { NoData, EventList, ConnectionState, SessionProperties } from './common/ui_components.js';
+import helpers from "./utils/helpers.js";
+import { NoData, EventList, ConnectionState, SessionProperties } from "./common/ui_components.js";
 
 export class LogViewer extends Component {
     static components = {
         NoData,
         EventList,
         ConnectionState,
-        SessionProperties
+        SessionProperties,
     };
 
     static template = xml`
@@ -141,29 +141,33 @@ export class LogViewer extends Component {
 
     setup() {
         this.state = useState({
-            activeView: 'timeline',
+            activeView: "timeline",
             selectedTimeline: null,
             selectedSession: null,
             selectedSnapshot: null,
-            expandedSessions: {}
+            expandedSessions: {},
         });
 
         this.viewOptions = [
-            { id: 'timeline', label: 'Timeline' },
-            { id: 'session', label: 'Session Details' },
-            { id: 'raw', label: 'Raw Data' }
+            { id: "timeline", label: "Timeline" },
+            { id: "session", label: "Session Details" },
+            { id: "raw", label: "Raw Data" },
         ];
 
         this.helpers = helpers;
     }
 
     get timelineKeys() {
-        if (!this.props.logs || !this.props.logs.timelines) return [];
+        if (!this.props.logs || !this.props.logs.timelines) {
+            return [];
+        }
         return Object.keys(this.props.logs.timelines).sort();
     }
 
     get snapshotKeys() {
-        if (!this.props.logs || !this.props.logs.snapshots) return [];
+        if (!this.props.logs || !this.props.logs.snapshots) {
+            return [];
+        }
         return Object.keys(this.props.logs.snapshots).sort();
     }
 
@@ -177,15 +181,19 @@ export class LogViewer extends Component {
             return [];
         }
 
-        return Object.keys(timeline.entriesBySessionId).filter(id => {
+        return Object.keys(timeline.entriesBySessionId).filter((id) => {
             // Filter out non-numeric IDs like "hasTurn"
             return !isNaN(parseInt(id));
         });
     }
 
     get sessionEvents() {
-        if (!this.state.selectedTimeline || !this.state.selectedSession ||
-            !this.props.logs || !this.props.logs.timelines) {
+        if (
+            !this.state.selectedTimeline ||
+            !this.state.selectedSession ||
+            !this.props.logs ||
+            !this.props.logs.timelines
+        ) {
             return [];
         }
 

@@ -1,5 +1,5 @@
 const { Component, xml, useState } = owl;
-import helpers from './utils/helpers.js';
+import helpers from "./utils/helpers.js";
 
 export class ZoomControl extends Component {
     static template = xml`
@@ -61,7 +61,7 @@ export class ZoomControl extends Component {
     setup() {
         this.state = useState({
             zoomLevel: 1,
-            zoomStartPercent: 0
+            zoomStartPercent: 0,
         });
 
         this.onBarClick = this.onBarClick.bind(this);
@@ -85,12 +85,14 @@ export class ZoomControl extends Component {
      * @returns {number} Duration of the visible range in ms
      */
     getVisibleDuration() {
-        if (!this.props.totalDuration) return 0;
+        if (!this.props.totalDuration) {
+            return 0;
+        }
         return this.props.totalDuration / this.state.zoomLevel;
     }
 
     onBarClick(ev) {
-        if (ev.target.closest('.zoom-selector')) {
+        if (ev.target.closest(".zoom-selector")) {
             return;
         }
 
@@ -110,7 +112,7 @@ export class ZoomControl extends Component {
     }
 
     onSelectorMouseDown(ev) {
-        if (ev.target.classList.contains('zoom-handle')) {
+        if (ev.target.classList.contains("zoom-handle")) {
             return;
         }
 
@@ -120,66 +122,68 @@ export class ZoomControl extends Component {
         const rect = ev.currentTarget.parentElement.getBoundingClientRect();
 
         this.dragging = {
-            type: 'move',
+            type: "move",
             startX: ev.clientX,
             startLeft: this.state.zoomStartPercent,
             startWidth: 100 / this.state.zoomLevel,
-            barWidth: rect.width
+            barWidth: rect.width,
         };
 
-        document.addEventListener('mousemove', this.onMouseMove);
-        document.addEventListener('mouseup', this.onMouseUp);
-        document.body.classList.add('dragging');
+        document.addEventListener("mousemove", this.onMouseMove);
+        document.addEventListener("mouseup", this.onMouseUp);
+        document.body.classList.add("dragging");
     }
 
     startLeftHandleDrag(ev) {
         ev.stopPropagation();
         ev.preventDefault();
 
-        const rect = ev.currentTarget.closest('.zoom-overview-bar').getBoundingClientRect();
+        const rect = ev.currentTarget.closest(".zoom-overview-bar").getBoundingClientRect();
 
         this.dragging = {
-            type: 'left',
+            type: "left",
             startX: ev.clientX,
             startLeft: this.state.zoomStartPercent,
             startWidth: 100 / this.state.zoomLevel,
-            barWidth: rect.width
+            barWidth: rect.width,
         };
 
-        document.addEventListener('mousemove', this.onMouseMove);
-        document.addEventListener('mouseup', this.onMouseUp);
-        document.body.classList.add('dragging');
+        document.addEventListener("mousemove", this.onMouseMove);
+        document.addEventListener("mouseup", this.onMouseUp);
+        document.body.classList.add("dragging");
     }
 
     startRightHandleDrag(ev) {
         ev.stopPropagation();
         ev.preventDefault();
 
-        const rect = ev.currentTarget.closest('.zoom-overview-bar').getBoundingClientRect();
+        const rect = ev.currentTarget.closest(".zoom-overview-bar").getBoundingClientRect();
 
         this.dragging = {
-            type: 'right',
+            type: "right",
             startX: ev.clientX,
             startLeft: this.state.zoomStartPercent,
             startWidth: 100 / this.state.zoomLevel,
-            barWidth: rect.width
+            barWidth: rect.width,
         };
 
         // Add global event listeners
-        document.addEventListener('mousemove', this.onMouseMove);
-        document.addEventListener('mouseup', this.onMouseUp);
-        document.body.classList.add('dragging');
+        document.addEventListener("mousemove", this.onMouseMove);
+        document.addEventListener("mouseup", this.onMouseUp);
+        document.body.classList.add("dragging");
     }
 
     // Handle mouse movement for all drag operations
     onMouseMove(ev) {
-        if (!this.dragging) return;
+        if (!this.dragging) {
+            return;
+        }
 
         const deltaX = ev.clientX - this.dragging.startX;
         const deltaPercent = (deltaX / this.dragging.barWidth) * 100;
 
         switch (this.dragging.type) {
-            case 'left': {
+            case "left": {
                 // Dragging left handle - adjust start position and width
                 let newStartPercent = this.dragging.startLeft + deltaPercent;
                 let newWidthPercent = this.dragging.startWidth - deltaPercent;
@@ -190,7 +194,8 @@ export class ZoomControl extends Component {
                     newWidthPercent = this.dragging.startLeft + this.dragging.startWidth;
                 }
 
-                if (newWidthPercent < 5) { // Minimum width of 5%
+                if (newWidthPercent < 5) {
+                    // Minimum width of 5%
                     newWidthPercent = 5;
                     newStartPercent = this.dragging.startLeft + this.dragging.startWidth - 5;
                 }
@@ -204,12 +209,14 @@ export class ZoomControl extends Component {
                 break;
             }
 
-            case 'right': {
+            case "right": {
                 // Dragging right handle - adjust width
                 let newWidthPercent = this.dragging.startWidth + deltaPercent;
 
                 // Enforce constraints
-                if (newWidthPercent < 5) newWidthPercent = 5; // Minimum width
+                if (newWidthPercent < 5) {
+                    newWidthPercent = 5;
+                } // Minimum width
 
                 if (this.state.zoomStartPercent + newWidthPercent > 100) {
                     newWidthPercent = 100 - this.state.zoomStartPercent;
@@ -219,13 +226,15 @@ export class ZoomControl extends Component {
                 break;
             }
 
-            case 'move': {
+            case "move": {
                 // Dragging entire selector - move without changing size
                 let newStartPercent = this.dragging.startLeft + deltaPercent;
                 const widthPercent = 100 / this.state.zoomLevel;
 
                 // Enforce constraints
-                if (newStartPercent < 0) newStartPercent = 0;
+                if (newStartPercent < 0) {
+                    newStartPercent = 0;
+                }
                 if (newStartPercent + widthPercent > 100) {
                     newStartPercent = 100 - widthPercent;
                 }
@@ -241,18 +250,18 @@ export class ZoomControl extends Component {
     onMouseUp() {
         if (this.dragging) {
             this.dragging = null;
-            document.body.classList.remove('dragging');
+            document.body.classList.remove("dragging");
 
             // Remove global event listeners
-            document.removeEventListener('mousemove', this.onMouseMove);
-            document.removeEventListener('mouseup', this.onMouseUp);
+            document.removeEventListener("mousemove", this.onMouseMove);
+            document.removeEventListener("mouseup", this.onMouseUp);
         }
     }
 
     notifyZoomChange() {
         this.props.onZoomChange({
             zoomLevel: this.state.zoomLevel,
-            zoomStartPercent: this.state.zoomStartPercent
+            zoomStartPercent: this.state.zoomStartPercent,
         });
     }
 
@@ -263,15 +272,17 @@ export class ZoomControl extends Component {
     }
 
     zoomIn() {
-        if (this.state.zoomLevel >= 10) return; // Maximum zoom level
+        if (this.state.zoomLevel >= 10) {
+            return;
+        } // Maximum zoom level
 
         const oldWidth = this.zoomWidthPercent;
         const newLevel = Math.min(10, this.state.zoomLevel * 1.5);
         const newWidth = 100 / newLevel;
 
         // Adjust start position to keep center point the same
-        const centerPoint = this.state.zoomStartPercent + (oldWidth / 2);
-        const newStart = centerPoint - (newWidth / 2);
+        const centerPoint = this.state.zoomStartPercent + oldWidth / 2;
+        const newStart = centerPoint - newWidth / 2;
 
         this.state.zoomLevel = newLevel;
         this.state.zoomStartPercent = Math.max(0, Math.min(100 - newWidth, newStart));
@@ -290,8 +301,8 @@ export class ZoomControl extends Component {
         const newWidth = 100 / newLevel;
 
         // Adjust start position to keep center point the same
-        const centerPoint = this.state.zoomStartPercent + (oldWidth / 2);
-        const newStart = centerPoint - (newWidth / 2);
+        const centerPoint = this.state.zoomStartPercent + oldWidth / 2;
+        const newStart = centerPoint - newWidth / 2;
 
         this.state.zoomLevel = newLevel;
         this.state.zoomStartPercent = Math.max(0, Math.min(100 - newWidth, newStart));

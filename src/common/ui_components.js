@@ -1,5 +1,5 @@
 const { Component, xml, useState } = owl;
-import helpers from '../utils/helpers.js';
+import helpers from "../utils/helpers.js";
 
 export class ExpandableSection extends Component {
     static template = xml`
@@ -138,5 +138,5 @@ export default {
     NoData,
     EventList,
     SessionProperties,
-    ConnectionState
+    ConnectionState,
 };

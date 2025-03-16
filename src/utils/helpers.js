@@ -1,20 +1,24 @@
 export function formatEventTime(event) {
-    if (!event || !event.event) return '';
+    if (!event || !event.event) {
+        return "";
+    }
 
     const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
     if (timeMatch && timeMatch[1]) {
         // Check if ISO format
-        if (timeMatch[1].includes('T')) {
+        if (timeMatch[1].includes("T")) {
             const date = new Date(timeMatch[1]);
             return date.toLocaleTimeString();
         }
         return timeMatch[1];
     }
-    return '';
+    return "";
 }
 
 export function formatEventText(event) {
-    if (!event || !event.event) return '';
+    if (!event || !event.event) {
+        return "";
+    }
 
     const timeMatch = event.event.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z|[0-9:.]+):/);
     if (timeMatch) {
@@ -24,45 +28,55 @@ export function formatEventText(event) {
 }
 
 export function formatTime(timelineKey) {
-    if (!timelineKey) return '';
+    if (!timelineKey) {
+        return "";
+    }
 
     try {
         const date = new Date(timelineKey);
         return date.toLocaleString();
-    } catch (e) {
+    } catch {
         return timelineKey;
     }
 }
 
 export function getSessionStateClass(session) {
-    if (!session) return '';
-
-    if (session.state === 'connected' || session.peer?.state === 'connected') {
-        return 'connected';
+    if (!session) {
+        return "";
     }
 
-    if (session.state === 'connecting' || session.peer?.state === 'connecting') {
-        return 'connecting';
+    if (session.state === "connected" || session.peer?.state === "connected") {
+        return "connected";
     }
 
-    return 'disconnected';
+    if (session.state === "connecting" || session.peer?.state === "connecting") {
+        return "connecting";
+    }
+
+    return "disconnected";
 }
 
 export function getConnectionStateClass(state) {
-    if (!state) return '';
+    if (!state) {
+        return "";
+    }
 
-    if (state.includes('connected')) return 'connected';
-    if (state.includes('connecting')) return 'connecting';
-    return 'disconnected';
+    if (state.includes("connected")) {
+        return "connected";
+    }
+    if (state.includes("connecting")) {
+        return "connecting";
+    }
+    return "disconnected";
 }
 
 export function getAudioState(state) {
     const states = [
-        'HAVE_NOTHING',
-        'HAVE_METADATA',
-        'HAVE_CURRENT_DATA',
-        'HAVE_FUTURE_DATA',
-        'HAVE_ENOUGH_DATA'
+        "HAVE_NOTHING",
+        "HAVE_METADATA",
+        "HAVE_CURRENT_DATA",
+        "HAVE_FUTURE_DATA",
+        "HAVE_ENOUGH_DATA",
     ];
 
     return states[state] || state;
@@ -70,10 +84,10 @@ export function getAudioState(state) {
 
 export function getNetworkState(state) {
     const states = [
-        'NETWORK_EMPTY',
-        'NETWORK_IDLE',
-        'downloading', // NETWORK_LOADING
-        'NETWORK_NO_SOURCE'
+        "NETWORK_EMPTY",
+        "NETWORK_IDLE",
+        "downloading", // NETWORK_LOADING
+        "NETWORK_NO_SOURCE",
     ];
 
     return states[state] || state;
@@ -85,16 +99,24 @@ export function getNetworkState(state) {
  * @returns {string} Formatted duration string
  */
 export function formatDuration(ms) {
-    if (!ms || ms < 0) return '0s';
+    if (!ms || ms < 0) {
+        return "0s";
+    }
 
     const seconds = Math.floor(ms / 1000);
     const milliseconds = (ms % 1000) / 10;
-    if (seconds < 1) return `${(ms / 1000).toFixed(2)}s`;
-    if (seconds < 60) return `${seconds}.${milliseconds.toFixed(0)}s`;
+    if (seconds < 1) {
+        return `${(ms / 1000).toFixed(2)}s`;
+    }
+    if (seconds < 60) {
+        return `${seconds}.${milliseconds.toFixed(0)}s`;
+    }
 
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    if (minutes < 60) return `${minutes}m ${remainingSeconds}.${milliseconds.toFixed(0)}s`;
+    if (minutes < 60) {
+        return `${minutes}m ${remainingSeconds}.${milliseconds.toFixed(0)}s`;
+    }
 
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
@@ -115,7 +137,7 @@ export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosi
             visibleStartTime: new Date(),
             visibleEndTime: new Date(),
             fullStartTime: new Date(),
-            fullEndTime: new Date()
+            fullEndTime: new Date(),
         };
     }
 
@@ -129,7 +151,7 @@ export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosi
             visibleStartTime: fullStartTime,
             visibleEndTime: fullEndTime,
             fullStartTime,
-            fullEndTime
+            fullEndTime,
         };
     }
 
@@ -150,7 +172,7 @@ export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosi
         visibleStartTime,
         visibleEndTime,
         fullStartTime,
-        fullEndTime
+        fullEndTime,
     };
 }
 
@@ -161,7 +183,9 @@ export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosi
  * @returns {Array} Array of event groups (each group is an array of events)
  */
 export function groupCloseEvents(events, threshold = 5) {
-    if (!events || !events.length) return [];
+    if (!events || !events.length) {
+        return [];
+    }
 
     // Sort events by position
     const sortedEvents = [...events].sort((a, b) => a.position - b.position);
@@ -201,5 +225,5 @@ export default {
     getNetworkState,
     formatDuration,
     calculateVisibleTimeRange,
-    groupCloseEvents
+    groupCloseEvents,
 };

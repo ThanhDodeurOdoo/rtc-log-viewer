@@ -1,5 +1,5 @@
 const { Component, mount, xml } = owl;
-import { Main } from './main.js';
+import { Main } from "./main.js";
 class Root extends Component {
     static template = xml`
         <div id="root">
@@ -11,6 +11,6 @@ class Root extends Component {
 }
 
 // Mount the application when the DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    mount(Root, document.getElementById('app'));
+document.addEventListener("DOMContentLoaded", () => {
+    mount(Root, document.getElementById("app"));
 });
