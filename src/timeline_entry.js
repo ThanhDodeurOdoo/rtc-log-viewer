@@ -524,7 +524,6 @@ export class TimelineEntry extends Component {
         return timestamp >= start && timestamp <= end;
     }
 
-    // Group events that are close to each other
     getEventGroups(sessionId) {
         const visibleEvents = this.getProcessedEvents(sessionId);
         if (!visibleEvents.length) {
@@ -534,32 +533,88 @@ export class TimelineEntry extends Component {
         // Sort events by position
         const sortedEvents = [...visibleEvents].sort((a, b) => a.position - b.position);
 
-        const groups = [];
-        let currentGroup = [];
+        // Constants for clustering
+        const VERY_CLOSE_THRESHOLD = 0.5; // Events closer than this % are definitely grouped
+        const MIN_GROUP_SPACING = 4; // Minimum spacing between groups (visual width of a cluster)
 
-        // Group threshold - consider events as clustered if they're within 3% of timeline width
-        const threshold = 3;
+        // Step 1: Create initial groups of events that are very close to each other
+        const initialGroups = [];
+        let currentGroup = [sortedEvents[0]];
 
-        for (const event of sortedEvents) {
-            if (currentGroup.length === 0) {
-                currentGroup.push(event);
+        for (let i = 1; i < sortedEvents.length; i++) {
+            const prevEvent = sortedEvents[i - 1];
+            const currentEvent = sortedEvents[i];
+
+            // If events are extremely close, group them immediately
+            if (currentEvent.position - prevEvent.position <= VERY_CLOSE_THRESHOLD) {
+                currentGroup.push(currentEvent);
             } else {
-                const lastEvent = currentGroup[currentGroup.length - 1];
-
-                if (Math.abs(lastEvent.position - event.position) < threshold) {
-                    currentGroup.push(event);
-                } else {
-                    groups.push([...currentGroup]);
-                    currentGroup = [event];
-                }
+                initialGroups.push([...currentGroup]);
+                currentGroup = [currentEvent];
             }
         }
 
+        // Add the last group
         if (currentGroup.length > 0) {
-            groups.push(currentGroup);
+            initialGroups.push(currentGroup);
         }
 
-        return groups;
+        // If we already have just one group, return it
+        if (initialGroups.length <= 1) {
+            return initialGroups;
+        }
+
+        // Step 2: Recursive function to merge groups until they're spaced adequately
+        const mergeGroupsUntilSpaced = (groups) => {
+            // Check if groups have adequate spacing
+            let needsMerging = false;
+            for (let i = 0; i < groups.length - 1; i++) {
+                const currentGroupPos = this.getGroupPosition(groups[i]);
+                const nextGroupPos = this.getGroupPosition(groups[i + 1]);
+
+                // Calculate required space based on group sizes
+                // Larger groups need more space on each side (half of MIN_GROUP_SPACING)
+                if (nextGroupPos - currentGroupPos < MIN_GROUP_SPACING) {
+                    needsMerging = true;
+                    break;
+                }
+            }
+
+            // If spacing is adequate, return current groups
+            if (!needsMerging || groups.length <= 1) {
+                return groups;
+            }
+
+            // Find the closest pair of groups to merge
+            let closestPairIndex = 0;
+            let smallestDistance = Infinity;
+
+            for (let i = 0; i < groups.length - 1; i++) {
+                const currentGroupPos = this.getGroupPosition(groups[i]);
+                const nextGroupPos = this.getGroupPosition(groups[i + 1]);
+                const distance = nextGroupPos - currentGroupPos;
+
+                if (distance < smallestDistance) {
+                    smallestDistance = distance;
+                    closestPairIndex = i;
+                }
+            }
+
+            // Merge the closest pair
+            const newGroups = [...groups];
+            const mergedGroup = [
+                ...newGroups[closestPairIndex],
+                ...newGroups[closestPairIndex + 1],
+            ];
+
+            newGroups.splice(closestPairIndex, 2, mergedGroup);
+
+            // Recursively check if further merging is needed
+            return mergeGroupsUntilSpaced(newGroups);
+        };
+
+        // Apply the recursive merging
+        return mergeGroupsUntilSpaced(initialGroups);
     }
 
     // Get position for a group (average of all events in group)
@@ -568,8 +623,9 @@ export class TimelineEntry extends Component {
             return 0;
         }
 
-        // Use the middle event in the group for positioning
-        return group[Math.floor(group.length / 2)].position;
+        // Calculate the average position
+        const sum = group.reduce((total, event) => total + event.position, 0);
+        return sum / group.length;
     }
 
     // Extract connection state from event text
