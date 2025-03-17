@@ -12,13 +12,6 @@ const ISSUE_TYPES = {
 
 const RECOVERY_THRESHOLD = 3; // Number of recovery attempts that indicates a problem
 
-// Used to determine how issues are grouped
-const GROUP_BY = {
-    TITLE: "title",
-    TYPE: "type",
-    SESSION: "sessionId",
-};
-
 export class AnalysisView extends Component {
     static template = xml`
         <div class="analysis-view">
@@ -42,20 +35,6 @@ export class AnalysisView extends Component {
                 
                 <div t-else="" class="analysis-results">
                     <h4>Analysis Results</h4>
-                    <p class="analysis-summary">
-                        Found <strong t-esc="getTotalIssueCount()"></strong> potential issues 
-                        grouped into <strong t-esc="state.groupedResults.length"></strong> categories.
-                    </p>
-
-                    <div class="grouping-controls">
-                        <label for="grouping-select">Group issues by:</label>
-                        <select id="grouping-select" t-on-change="onGroupingChange">
-                            <option value="title" selected="selected">Issue Title</option>
-                            <option value="type">Issue Type</option>
-                            <option value="sessionId">Session ID</option>
-                        </select>
-                    </div>
-                    
                     <div class="issue-list">
                         <div
                             t-foreach="state.groupedResults"
@@ -173,7 +152,6 @@ export class AnalysisView extends Component {
             isAnalyzing: false,
             expandedIssues: {},
             expandedInstances: {},
-            groupingMethod: GROUP_BY.TITLE, // Default grouping method
         });
 
         this.helpers = helpers;
@@ -186,14 +164,6 @@ export class AnalysisView extends Component {
 
     getTotalIssueCount() {
         return this.state.rawResults.length;
-    }
-
-    onGroupingChange(event) {
-        this.state.groupingMethod = event.target.value;
-        this.groupResults();
-        // Reset expanded state when regrouping
-        this.state.expandedIssues = {};
-        this.state.expandedInstances = {};
     }
 
     async analyzeData() {
@@ -222,27 +192,13 @@ export class AnalysisView extends Component {
     }
 
     groupResults() {
-        const groupBy = this.state.groupingMethod;
         const results = this.state.rawResults;
         const groups = new Map();
 
-        // Group by the selected method
+        // Always group by title
         for (const issue of results) {
-            // Generate a key based on grouping method
-            let key;
-            switch (groupBy) {
-                case GROUP_BY.TITLE:
-                    key = issue.title;
-                    break;
-                case GROUP_BY.TYPE:
-                    key = issue.type;
-                    break;
-                case GROUP_BY.SESSION:
-                    key = issue.sessionId || "unknown";
-                    break;
-                default:
-                    key = issue.title;
-            }
+            // Generate a key based on title
+            const key = issue.title;
 
             if (!groups.has(key)) {
                 groups.set(key, {
@@ -260,28 +216,6 @@ export class AnalysisView extends Component {
                 const group = groups.get(key);
                 group.count++;
                 group.instances.push(issue);
-                // For type grouping, use the highest severity for the group
-                if (groupBy === GROUP_BY.TYPE) {
-                    const severityMap = {
-                        [ISSUE_TYPES.ERROR]: 0,
-                        [ISSUE_TYPES.WARNING]: 1,
-                        [ISSUE_TYPES.INFO]: 2,
-                    };
-
-                    // Update title if this issue is more severe
-                    if (severityMap[issue.type] < severityMap[group.type]) {
-                        group.title = issue.title;
-                        group.description = issue.description;
-                    }
-                }
-                // For session grouping, combine descriptions
-                if (groupBy === GROUP_BY.SESSION) {
-                    // Update title to reflect all issues
-                    if (group.count === 2) {
-                        group.title = `Multiple issues for Session ${issue.sessionId}`;
-                    }
-                    group.description = `${group.count} issues detected for this session.`;
-                }
             }
         }
 
