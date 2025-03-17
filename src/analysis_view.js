@@ -1,4 +1,4 @@
-const { Component, xml, useState } = owl;
+const { Component, xml, useState, useEffect } = owl;
 import helpers from "./utils/helpers.js";
 import { NoData } from "./common/ui_components.js";
 
@@ -29,12 +29,10 @@ export class AnalysisView extends Component {
         <div class="analysis-view">
             <h3>Connection Analysis [⚠️WORK IN PROGESS⚠️]</h3>
             <p class="view-description">Automatic analysis of connection issues and potential problems.</p>
-            
             <NoData
                 t-if="!hasLogData"
                 message="'No log data available for analysis'"
             />
-            
             <div t-else="" class="analysis-content">
                 <div t-if="state.isAnalyzing" class="loading-analysis">
                     <p>Analyzing connection logs...</p>
@@ -156,6 +154,7 @@ export class AnalysisView extends Component {
     `;
 
     static components = { NoData };
+    static props = ["logs?"];
 
     setup() {
         this.state = useState({
@@ -167,7 +166,12 @@ export class AnalysisView extends Component {
         });
 
         this.helpers = helpers;
-        this.analyzeData();
+        useEffect(
+            () => {
+                this.analyzeData();
+            },
+            () => [this.props.logs],
+        );
     }
 
     get hasLogData() {

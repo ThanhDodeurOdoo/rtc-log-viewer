@@ -168,6 +168,105 @@ button {
     box-shadow: var(--shadow-sm);
 }
 
+/* Filter sections */
+.filter-section {
+    margin-top: var(--space-lg);
+    border: var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--medium-bg);
+}
+
+.filter-header h4 {
+    margin: 0;
+    flex-grow: 1;
+}
+
+.filter-count {
+    margin-right: var(--space-sm);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.filter-toggle {
+    background-color: transparent;
+    color: var(--text-color);
+    border: none;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.filter-content {
+    padding: var(--space-sm);
+    background-color: var(--light-bg);
+}
+
+.filter-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+}
+
+.filter-action-btn {
+    background-color: var(--medium-bg);
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+}
+
+.filter-action-btn:hover {
+    background-color: var(--dark-bg);
+}
+
+.filter-items {
+    max-height: 200px;
+    overflow-y: auto;
+    border: var(--border);
+    border-radius: var(--radius);
+    background-color: var(--card-bg);
+}
+
+.filter-item {
+    padding: var(--space-xs) var(--space-sm);
+    border-bottom: var(--border);
+}
+
+.filter-item:last-child {
+    border-bottom: none;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+}
+
+.timeline-label,
+.snapshot-label {
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .system-info {
     margin-bottom: var(--space-xl);
 }

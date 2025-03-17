@@ -21,15 +21,13 @@ const CONSTANTS = {
     DEFAULT_STATE_OTHER: "new", // Default state for other sessions
 };
 
-// CSS classes for different log levels
 const LOG_LEVEL_CLASSES = {
     INFO: "info",
     WARNING: "warning",
     ERROR: "error",
-    WARN: "warn", // Alternative for warning
+    WARN: "warn",
 };
 
-// Event text keywords that indicate errors
 const ERROR_KEYWORDS = ["error", "failed", "failure", "attempting to recover"];
 
 export class TimelineEntry extends Component {
@@ -199,7 +197,6 @@ export class TimelineEntry extends Component {
         this.LOG_LEVEL_CLASSES = LOG_LEVEL_CLASSES;
         this.CONSTANTS = CONSTANTS;
 
-        // Bind methods
         this.handleZoomChange = this.handleZoomChange.bind(this);
         this.handleResize = this.handleResize.bind(this);
     }
@@ -212,22 +209,18 @@ export class TimelineEntry extends Component {
         window.removeEventListener("resize", this.handleResize);
     }
 
-    // Handle window resize to reposition popups
     handleResize() {
         if (this.state.activeEventGroup && this.state.clickedEventElement) {
             this.repositionPopup();
         }
     }
 
-    // Handle zoom changes from the ZoomControl component
     handleZoomChange({ zoomLevel, zoomStartPercent }) {
         this.state.zoomLevel = zoomLevel;
         this.state.zoomStartPercent = zoomStartPercent;
     }
 
-    // Reposition popup to stay anchored to its group
     repositionPopup() {
-        // Use the stored clicked element reference directly
         const element = this.state.clickedEventElement;
         if (!element) {
             return;
@@ -240,7 +233,6 @@ export class TimelineEntry extends Component {
         const popupHeight = 300; // Approximate max height
         const padding = 10; // Padding from viewport edges
 
-        // Position popup - try to center it horizontally relative to the clicked element
         let left = rect.left + rect.width / 2 - popupWidth / 2;
 
         // Keep popup in viewport horizontally
@@ -840,24 +832,18 @@ export class TimelineEntry extends Component {
     }
 
     showTooltip(event, e) {
-        // Get event information
         this.state.activeTooltip = {
             time: event.original ? helpers.formatEventTime(event.original) : "",
             level: event.level || "",
             text: event.original ? helpers.formatEventText(event.original) : "",
         };
-
-        // Update tooltip position
         const updatePosition = (e) => {
             const x = e.clientX + 10;
             const y = e.clientY - 80;
             this.state.tooltipStyle = `left: ${x}px; top: ${y}px;`;
         };
-
-        // Set initial position
         updatePosition(e);
 
-        // Track mouse movement for tooltip
         this.tooltipMoveHandler = updatePosition;
         document.addEventListener("mousemove", this.tooltipMoveHandler);
     }
