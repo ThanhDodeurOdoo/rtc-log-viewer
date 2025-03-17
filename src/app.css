@@ -1249,7 +1249,6 @@ body.dragging * {
     animation: pulse 1.5s;
 }
 
-/* Media queries for responsive design */
 @media (max-width: 768px) {
     .log-content {
         grid-template-columns: 1fr;
@@ -1287,8 +1286,6 @@ body.dragging * {
         height: 40px;
     }
 }
-
-/* Add these styles to src/app.css */
 
 /* Analysis view styles */
 .analysis-view {
@@ -1424,4 +1421,122 @@ body.dragging * {
     text-align: center;
     padding: var(--space-xl);
     color: var(--text-secondary);
+}
+
+.issue-count {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin-left: var(--space-xs);
+    font-weight: normal;
+}
+
+.grouping-controls {
+    margin-bottom: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.instance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: var(--space-xs) var(--space-md);
+    background-color: var(--light-bg);
+    margin-bottom: var(--space-xs);
+    border-radius: var(--radius);
+}
+
+.instance-title {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}
+
+/* Source indicators for both instances and single issues */
+.instance-source,
+.source-tag {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    background-color: var(--medium-bg);
+    padding: 2px 6px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.source-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.snapshot-source {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: #2980b9;
+}
+
+.timeline-source {
+    background-color: rgba(46, 204, 113, 0.15);
+    color: #27ae60;
+}
+
+.unknown-source {
+    background-color: rgba(149, 165, 166, 0.15);
+    color: #7f8c8d;
+}
+
+.instance-toggle {
+    background-color: transparent;
+    color: var(--text-color);
+    border: none;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.issue-instance {
+    border-left: 2px solid var(--medium-bg);
+    margin-bottom: var(--space-sm);
+    padding-left: var(--space-xs);
+}
+
+.instance-details {
+    padding: var(--space-xs) var(--space-md);
+    background-color: var(--light-bg);
+    border-radius: var(--radius);
+    margin-top: var(--space-xs);
+    margin-bottom: var(--space-sm);
+}
+
+.issue-instances {
+    margin-top: var(--space-md);
+    padding: var(--space-sm);
+    background-color: rgba(220, 220, 220, 0.2);
+    border-radius: var(--radius);
+}
+
+.issue-instances h6 {
+    margin-top: 0;
+    margin-bottom: var(--space-sm);
+    border-bottom: var(--border);
+    padding-bottom: var(--space-xs);
+}
+
+/* Improve styling of single issue display */
+.single-issue-details {
+    padding: var(--space-sm);
+    background-color: var(--light-bg);
+    border-radius: var(--radius);
+    margin-top: var(--space-md);
 }

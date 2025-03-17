@@ -12,6 +12,13 @@ const ISSUE_TYPES = {
 
 const RECOVERY_THRESHOLD = 3; // Number of recovery attempts that indicates a problem
 
+// Used to determine how issues are grouped
+const GROUP_BY = {
+    TITLE: "title",
+    TYPE: "type",
+    SESSION: "sessionId",
+};
+
 export class AnalysisView extends Component {
     static template = xml`
         <div class="analysis-view">
@@ -28,56 +35,126 @@ export class AnalysisView extends Component {
                     <p>Analyzing connection logs...</p>
                 </div>
                 
-                <div t-elif="state.analysisResults.length === 0" class="no-issues-found">
+                <div t-elif="state.groupedResults.length === 0" class="no-issues-found">
                     <h4>No Issues Detected</h4>
                     <p>The analysis did not find any significant connection problems in the logs.</p>
                 </div>
                 
                 <div t-else="" class="analysis-results">
                     <h4>Analysis Results</h4>
-                    <p class="analysis-summary">Found <strong t-esc="state.analysisResults.length"></strong> potential issues in the connection logs.</p>
+                    <p class="analysis-summary">
+                        Found <strong t-esc="getTotalIssueCount()"></strong> potential issues 
+                        grouped into <strong t-esc="state.groupedResults.length"></strong> categories.
+                    </p>
+
+                    <div class="grouping-controls">
+                        <label for="grouping-select">Group issues by:</label>
+                        <select id="grouping-select" t-on-change="onGroupingChange">
+                            <option value="title" selected="selected">Issue Title</option>
+                            <option value="type">Issue Type</option>
+                            <option value="sessionId">Session ID</option>
+                        </select>
+                    </div>
+                    
                     <div class="issue-list">
                         <div
-                            t-foreach="state.analysisResults"
-                            t-as="issue"
-                            t-key="issue_index"
-                            t-attf-class="issue-item {{ issue.type }}"
+                            t-foreach="state.groupedResults"
+                            t-as="group"
+                            t-key="group_index"
+                            t-attf-class="issue-item {{ group.type }}"
                         >
-                            <div class="issue-header" t-on-click="() => this.toggleIssueDetails(issue_index)">
+                            <div class="issue-header" t-on-click="() => this.toggleIssueDetails(group_index)">
                                 <h5 class="issue-title">
-                                    <span t-attf-class="issue-icon {{ issue.type }}"></span>
-                                    <span t-esc="issue.title"></span>
+                                    <span t-attf-class="issue-icon {{ group.type }}"></span>
+                                    <span t-esc="group.title"></span>
+                                    <span class="issue-count" t-if="group.count > 1">
+                                        (<t t-esc="group.count"/> occurrences)
+                                    </span>
                                 </h5>
                                 
                                 <button
-                                    t-attf-class="issue-toggle {{ state.expandedIssues[issue_index] ? 'expanded' : 'collapsed' }}"
-                                    t-on-click.stop="() => this.toggleIssueDetails(issue_index)"
+                                    t-attf-class="issue-toggle {{ state.expandedIssues[group_index] ? 'expanded' : 'collapsed' }}"
+                                    t-on-click.stop="() => this.toggleIssueDetails(group_index)"
                                 >
-                                    <t t-esc="state.expandedIssues[issue_index] ? '▼' : '►'" />
+                                    <t t-esc="state.expandedIssues[group_index] ? '▼' : '►'" />
                                 </button>
                             </div>
                             
-                            <div class="issue-description" t-esc="issue.description"></div>
+                            <div class="issue-description" t-esc="group.description"></div>
                             
-                            <div t-if="state.expandedIssues[issue_index]" class="issue-details">
-                                <div t-if="issue.timestamp" class="issue-metadata">
-                                    <span class="metadata-label">Detected at:</span>
-                                    <span class="metadata-value" t-esc="helpers.formatTime(issue.timestamp)"></span>
-                                </div>
-                                
-                                <div t-if="issue.sessionId" class="issue-metadata">
-                                    <span class="metadata-label">Session ID:</span>
-                                    <span class="metadata-value" t-esc="issue.sessionId"></span>
-                                </div>
-                                
-                                <div t-if="issue.details" class="issue-technical-details">
-                                    <h6>Technical Details</h6>
-                                    <pre t-esc="window.JSON.stringify(issue.details, null, 2)"></pre>
-                                </div>
-                                
+                            <div t-if="state.expandedIssues[group_index]" class="issue-details">
                                 <div class="issue-recommendation">
                                     <h6>Recommendation</h6>
-                                    <p t-esc="getRecommendation(issue)"></p>
+                                    <p t-esc="getRecommendation(group)"></p>
+                                </div>
+
+                                <div t-if="group.count > 1" class="issue-instances">
+                                    <h6>Occurrences (<t t-esc="group.count"/>)</h6>
+                                    
+                                    <div t-foreach="group.instances" t-as="instance" t-key="instance_index" class="issue-instance">
+                                        <div class="instance-header" t-on-click="() => this.toggleInstanceDetails(group_index, instance_index)">
+                                            <h6 class="instance-title">
+                                                <span t-if="instance.sessionId">Session <t t-esc="instance.sessionId"/></span>
+                                                <span t-if="instance.timestamp" class="instance-source">
+                                                    - Snapshot <t t-esc="helpers.formatTime(instance.timestamp)"/>
+                                                </span>
+                                                <span t-elif="instance.timelineKey" class="instance-source">
+                                                    - Timeline <t t-esc="helpers.formatTime(instance.timelineKey)"/>
+                                                </span>
+                                            </h6>
+                                            
+                                            <button
+                                                t-attf-class="instance-toggle {{ state.expandedInstances[group_index + '-' + instance_index] ? 'expanded' : 'collapsed' }}"
+                                                t-on-click.stop="() => this.toggleInstanceDetails(group_index, instance_index)"
+                                            >
+                                                <t t-esc="state.expandedInstances[group_index + '-' + instance_index] ? '▼' : '►'" />
+                                            </button>
+                                        </div>
+                                        
+                                        <div t-if="state.expandedInstances[group_index + '-' + instance_index]" class="instance-details">
+                                            <div t-if="instance.timestamp" class="issue-metadata">
+                                                <span class="metadata-label">Detected at:</span>
+                                                <span class="metadata-value" t-esc="helpers.formatTime(instance.timestamp)"></span>
+                                            </div>
+                                            
+                                            <div t-if="instance.sessionId" class="issue-metadata">
+                                                <span class="metadata-label">Session ID:</span>
+                                                <span class="metadata-value" t-esc="instance.sessionId"></span>
+                                            </div>
+                                            
+                                            <div t-if="instance.details" class="issue-technical-details">
+                                                <h6>Technical Details</h6>
+                                                <pre t-esc="window.JSON.stringify(instance.details, null, 2)"></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div t-else="" class="single-issue-details">
+                                    <div class="issue-metadata">
+                                        <span class="metadata-label">Source:</span>
+                                        <span class="metadata-value source-indicator">
+                                            <span t-if="group.timestamp" class="source-tag snapshot-source">
+                                                Snapshot <t t-esc="helpers.formatTime(group.timestamp)"/>
+                                            </span>
+                                            <span t-elif="group.timelineKey" class="source-tag timeline-source">
+                                                Timeline <t t-esc="helpers.formatTime(group.timelineKey)"/>
+                                            </span>
+                                            <span t-else="" class="source-tag unknown-source">
+                                                Unknown source
+                                            </span>
+                                        </span>
+                                    </div>
+                                    
+                                    <div t-if="group.sessionId" class="issue-metadata">
+                                        <span class="metadata-label">Session ID:</span>
+                                        <span class="metadata-value" t-esc="group.sessionId"></span>
+                                    </div>
+                                    
+                                    <div t-if="group.details" class="issue-technical-details">
+                                        <h6>Technical Details</h6>
+                                        <pre t-esc="window.JSON.stringify(group.details, null, 2)"></pre>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -91,9 +168,12 @@ export class AnalysisView extends Component {
 
     setup() {
         this.state = useState({
-            analysisResults: [],
+            rawResults: [], // Store all raw issues
+            groupedResults: [], // Grouped issues
             isAnalyzing: false,
             expandedIssues: {},
+            expandedInstances: {},
+            groupingMethod: GROUP_BY.TITLE, // Default grouping method
         });
 
         this.helpers = helpers;
@@ -102,6 +182,18 @@ export class AnalysisView extends Component {
 
     get hasLogData() {
         return this.props.logs && (this.props.logs.timelines || this.props.logs.snapshots);
+    }
+
+    getTotalIssueCount() {
+        return this.state.rawResults.length;
+    }
+
+    onGroupingChange(event) {
+        this.state.groupingMethod = event.target.value;
+        this.groupResults();
+        // Reset expanded state when regrouping
+        this.state.expandedIssues = {};
+        this.state.expandedInstances = {};
     }
 
     async analyzeData() {
@@ -122,10 +214,81 @@ export class AnalysisView extends Component {
             this.checkCandidateTypes(results);
 
             this.sortResultsBySeverity(results);
-            this.state.analysisResults = results;
+            this.state.rawResults = results;
+            this.groupResults();
         } finally {
             this.state.isAnalyzing = false;
         }
+    }
+
+    groupResults() {
+        const groupBy = this.state.groupingMethod;
+        const results = this.state.rawResults;
+        const groups = new Map();
+
+        // Group by the selected method
+        for (const issue of results) {
+            // Generate a key based on grouping method
+            let key;
+            switch (groupBy) {
+                case GROUP_BY.TITLE:
+                    key = issue.title;
+                    break;
+                case GROUP_BY.TYPE:
+                    key = issue.type;
+                    break;
+                case GROUP_BY.SESSION:
+                    key = issue.sessionId || "unknown";
+                    break;
+                default:
+                    key = issue.title;
+            }
+
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    // Copy basic issue properties
+                    type: issue.type,
+                    title: issue.title,
+                    description: issue.description,
+                    // Start tracking instances
+                    count: 1,
+                    instances: [issue],
+                    // For single-instance display
+                    ...issue,
+                });
+            } else {
+                const group = groups.get(key);
+                group.count++;
+                group.instances.push(issue);
+                // For type grouping, use the highest severity for the group
+                if (groupBy === GROUP_BY.TYPE) {
+                    const severityMap = {
+                        [ISSUE_TYPES.ERROR]: 0,
+                        [ISSUE_TYPES.WARNING]: 1,
+                        [ISSUE_TYPES.INFO]: 2,
+                    };
+
+                    // Update title if this issue is more severe
+                    if (severityMap[issue.type] < severityMap[group.type]) {
+                        group.title = issue.title;
+                        group.description = issue.description;
+                    }
+                }
+                // For session grouping, combine descriptions
+                if (groupBy === GROUP_BY.SESSION) {
+                    // Update title to reflect all issues
+                    if (group.count === 2) {
+                        group.title = `Multiple issues for Session ${issue.sessionId}`;
+                    }
+                    group.description = `${group.count} issues detected for this session.`;
+                }
+            }
+        }
+
+        // Convert the map to an array and sort
+        const groupedArray = Array.from(groups.values());
+        this.sortGroupsBySeverity(groupedArray);
+        this.state.groupedResults = groupedArray;
     }
 
     sortResultsBySeverity(results) {
@@ -138,8 +301,38 @@ export class AnalysisView extends Component {
         results.sort((a, b) => severity[a.type] - severity[b.type]);
     }
 
+    sortGroupsBySeverity(groups) {
+        const severity = {
+            [ISSUE_TYPES.ERROR]: 0,
+            [ISSUE_TYPES.WARNING]: 1,
+            [ISSUE_TYPES.INFO]: 2,
+        };
+
+        groups.sort((a, b) => {
+            // First by severity
+            const severityDiff = severity[a.type] - severity[b.type];
+            if (severityDiff !== 0) {
+                return severityDiff;
+            }
+
+            // Then by count (more occurrences first)
+            const countDiff = b.count - a.count;
+            if (countDiff !== 0) {
+                return countDiff;
+            }
+
+            // Finally by title
+            return a.title.localeCompare(b.title);
+        });
+    }
+
     toggleIssueDetails(index) {
         this.state.expandedIssues[index] = !this.state.expandedIssues[index];
+    }
+
+    toggleInstanceDetails(groupIndex, instanceIndex) {
+        const key = `${groupIndex}-${instanceIndex}`;
+        this.state.expandedInstances[key] = !this.state.expandedInstances[key];
     }
 
     getRecommendation(issue) {
@@ -174,6 +367,9 @@ export class AnalysisView extends Component {
 
             case "Older Odoo Version":
                 return "Consider upgrading to a newer version of Odoo for improved WebRTC functionality and bug fixes.";
+
+            case "Multiple issues for Session":
+                return "This session has multiple issues. Review each instance for specific recommendations.";
 
             default:
                 return "Investigate the logs further for more context about this issue.";
@@ -416,7 +612,7 @@ export class AnalysisView extends Component {
                     }
                 });
 
-                if (!reachedConnected && sessionId !== timeline.selfSessionId.toString()) {
+                if (!reachedConnected && sessionId !== timeline.selfSessionId?.toString()) {
                     results.push({
                         type: ISSUE_TYPES.ERROR,
                         title: "Failed Connection",
