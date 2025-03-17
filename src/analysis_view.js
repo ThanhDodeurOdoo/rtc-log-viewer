@@ -1,13 +1,25 @@
-// src/analysis_view.js
 const { Component, xml, useState } = owl;
 import helpers from "./utils/helpers.js";
 import { NoData } from "./common/ui_components.js";
 
-// Constants for analysis
 const ISSUE_TYPES = {
     ERROR: "error",
     WARNING: "warning",
     INFO: "info",
+};
+
+const ISSUE_CODES = {
+    FALLBACK_MODE: 1001,
+    RECOVERY_LOOP: 1002,
+    SESSION_UNABLE_TO_CONNECT: 1003,
+    ICE_CONNECTION_ISSUES: 1004,
+    SFU_SERVER_ERROR: 1005,
+    SFU_SERVER_ERROR_KNOWN: 1006,
+    MEDIA_STREAM_ISSUES: 1007,
+    FAILED_CONNECTION: 1008,
+    NO_TURN_SERVER: 1009,
+    USING_TURN_RELAY: 1010,
+    MULTIPLE_ISSUES: 1012,
 };
 
 const RECOVERY_THRESHOLD = 3; // Number of recovery attempts that indicates a problem
@@ -206,6 +218,7 @@ export class AnalysisView extends Component {
                     type: issue.type,
                     title: issue.title,
                     description: issue.description,
+                    errorCode: issue.errorCode,
                     // Start tracking instances
                     count: 1,
                     instances: [issue],
@@ -270,43 +283,41 @@ export class AnalysisView extends Component {
     }
 
     getRecommendation(issue) {
-        // TODO should use const codes instead of title
-        switch (issue.title) {
-            case "Fallback Mode Detected":
+        // Use errorCode for recommendations instead of title
+        switch (issue.errorCode) {
+            case ISSUE_CODES.FALLBACK_MODE:
                 return "Check if the SFU server is running and accessible. Ensure firewall rules allow WebRTC traffic to the SFU server.";
 
-            case "Recovery Loop Detected":
+            case ISSUE_CODES.RECOVERY_LOOP:
                 return "Check for network stability issues. If behind a corporate firewall, ensure STUN/TURN servers are properly configured.";
 
-            case "Session Unable to Connect":
+            case ISSUE_CODES.SESSION_UNABLE_TO_CONNECT:
                 return "This may indicate the user is behind a restrictive firewall or asymmetric NAT. Consider using TURN servers to facilitate the connection.";
 
-            case "ICE Connection Issues":
+            case ISSUE_CODES.ICE_CONNECTION_ISSUES:
                 return "Check for network stability and ensure STUN/TURN servers are properly configured. Firewall rules may be blocking ICE connectivity.";
 
-            case "SFU Server Errors":
+            case ISSUE_CODES.SFU_SERVER_ERROR:
                 return "Check the SFU server logs for more details. Ensure the server has enough resources and is properly configured.";
 
-            case "Media Stream Issues":
+            case ISSUE_CODES.MEDIA_STREAM_ISSUES:
                 return "Check for camera/microphone permission issues. Ensure the devices are working properly and not being used by other applications.";
 
-            case "Failed Connection":
+            case ISSUE_CODES.FAILED_CONNECTION:
                 return "The connection attempt failed. Check network conditions, firewall settings, and ensure STUN/TURN servers are properly configured.";
 
-            case "No TURN Server Configured":
+            case ISSUE_CODES.NO_TURN_SERVER:
                 return "Consider configuring TURN servers to improve connection reliability in restrictive network environments.";
 
-            case "Using TURN Relay":
+            case ISSUE_CODES.USING_TURN_RELAY:
                 return "The connection is using a TURN relay, which may result in higher latency. This is normal in restrictive network environments.";
 
-            case "Older Odoo Version":
-                return "Consider upgrading to a newer version of Odoo for improved WebRTC functionality and bug fixes.";
-
-            case "Multiple issues for Session":
+            case ISSUE_CODES.MULTIPLE_ISSUES:
                 return "This session has multiple issues. Review each instance for specific recommendations.";
 
-            case "SFU Server Error (known)":
+            case ISSUE_CODES.SFU_SERVER_ERROR_KNOWN:
                 return "This is a known issue and should not cause any problems.";
+
             default:
                 return "Investigate the logs further for more context about this issue.";
         }
@@ -322,6 +333,7 @@ export class AnalysisView extends Component {
             if (snapshot.fallback === true) {
                 results.push({
                     type: ISSUE_TYPES.WARNING,
+                    errorCode: ISSUE_CODES.FALLBACK_MODE,
                     title: "Fallback Mode Detected",
                     description:
                         "The connection fell back to peer-to-peer mode after failing to establish or maintain an SFU connection.",
@@ -365,6 +377,7 @@ export class AnalysisView extends Component {
                 if (recoveryAttempts >= RECOVERY_THRESHOLD) {
                     results.push({
                         type: ISSUE_TYPES.ERROR,
+                        errorCode: ISSUE_CODES.RECOVERY_LOOP,
                         title: "Recovery Loop Detected",
                         description: `Session ${sessionId} made ${recoveryAttempts} recovery attempts, indicating persistent connection issues.`,
                         timelineKey,
@@ -399,6 +412,7 @@ export class AnalysisView extends Component {
                 ) {
                     results.push({
                         type: ISSUE_TYPES.ERROR,
+                        errorCode: ISSUE_CODES.SESSION_UNABLE_TO_CONNECT,
                         title: "Session Unable to Connect",
                         description: `Session ${session.id} appears to be stuck in the '${session.state}' state, indicating it may be behind a restrictive firewall or asymmetric NAT.`,
                         timestamp,
@@ -450,6 +464,7 @@ export class AnalysisView extends Component {
                 if (iceFailures > 0) {
                     results.push({
                         type: ISSUE_TYPES.WARNING,
+                        errorCode: ISSUE_CODES.ICE_CONNECTION_ISSUES,
                         title: "ICE Connection Issues",
                         description: `Session ${sessionId} experienced ICE connection failures, indicating potential network issues or firewall restrictions.`,
                         timelineKey,
@@ -483,6 +498,7 @@ export class AnalysisView extends Component {
                     case "Cannot read properties of undefined (reading 'produce')":
                         results.push({
                             type: ISSUE_TYPES.WARNING,
+                            errorCode: ISSUE_CODES.SFU_SERVER_ERROR_KNOWN,
                             title: "SFU Server Error (known)",
                             description: "Eager usage of `updateUpload()`",
                             timestamp,
@@ -491,6 +507,7 @@ export class AnalysisView extends Component {
                     default:
                         results.push({
                             type: ISSUE_TYPES.ERROR,
+                            errorCode: ISSUE_CODES.SFU_SERVER_ERROR,
                             title: "SFU Server Error",
                             description: error,
                             timestamp,
@@ -516,6 +533,7 @@ export class AnalysisView extends Component {
                 if (session.audioError || session.videoError) {
                     results.push({
                         type: ISSUE_TYPES.WARNING,
+                        errorCode: ISSUE_CODES.MEDIA_STREAM_ISSUES,
                         title: "Media Stream Issues",
                         description: `Session ${session.id} experienced issues with audio/video streams.`,
                         timestamp,
@@ -559,6 +577,7 @@ export class AnalysisView extends Component {
                 if (!reachedConnected && sessionId !== timeline.selfSessionId?.toString()) {
                     results.push({
                         type: ISSUE_TYPES.ERROR,
+                        errorCode: ISSUE_CODES.FAILED_CONNECTION,
                         title: "Failed Connection",
                         description: `Session ${sessionId} never reached the 'connected' state.`,
                         timelineKey,
@@ -582,6 +601,7 @@ export class AnalysisView extends Component {
             if (!timeline.hasTurn) {
                 results.push({
                     type: ISSUE_TYPES.INFO,
+                    errorCode: ISSUE_CODES.NO_TURN_SERVER,
                     title: "No TURN Server Configured",
                     description:
                         "No TURN server was configured for this session. This may cause connection issues in restrictive network environments.",
@@ -610,6 +630,7 @@ export class AnalysisView extends Component {
                 if (session.peer && session.peer.remoteCandidateType === "relay") {
                     results.push({
                         type: ISSUE_TYPES.INFO,
+                        errorCode: ISSUE_CODES.USING_TURN_RELAY,
                         title: "Using TURN Relay",
                         description: `Session ${session.id} is using a TURN relay, indicating a restrictive network environment.`,
                         timestamp,

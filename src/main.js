@@ -1,15 +1,14 @@
-// src/main.js
 const { Component, xml, useState } = owl;
 import { TimelineViewer } from "./timeline_viewer.js";
 import { SnapshotViewer } from "./snapshot_viewer.js";
-import { AnalysisView } from "./analysis_view.js"; // Import the new component
+import { AnalysisView } from "./analysis_view.js";
 import helpers from "./utils/helpers.js";
 import { NoData } from "./common/ui_components.js";
 
 export class Main extends Component {
     static template = xml`
         <div id="main" class="rtc-log-viewer">
-            <div 
+            <div t-if="!state.logs"
                 t-attf-class="file-upload-container {{ state.isDragOver ? 'drag-over' : '' }}"
                 t-on-dragover.prevent.stop="onDragOver"
                 t-on-dragleave.prevent.stop="onDragLeave"

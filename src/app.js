@@ -10,7 +10,6 @@ class Root extends Component {
     static components = { Main };
 }
 
-// Mount the application when the DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
     mount(Root, document.getElementById("app"));
 });

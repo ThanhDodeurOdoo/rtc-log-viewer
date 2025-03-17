@@ -1,5 +1,3 @@
-// src/utils/helpers.js
-
 export function formatEventTime(event) {
     if (!event || !event.event) {
         return "";

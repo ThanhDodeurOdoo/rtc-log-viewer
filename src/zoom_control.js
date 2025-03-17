@@ -1,7 +1,6 @@
 const { Component, xml, useState } = owl;
 import helpers from "./utils/helpers.js";
 
-// Constants for zoom control behavior
 const ZOOM = {
     MIN_WIDTH_PERCENT: 0.01,
     ZOOM_IN_FACTOR: 1.5,
@@ -9,14 +8,12 @@ const ZOOM = {
     SLIDE_OVERLAP_FACTOR: 0.5,
 };
 
-// Drag operation types
 const DRAG_TYPE = {
     LEFT: "left",
     RIGHT: "right",
     MOVE: "move",
 };
 
-// Selectors for DOM elements
 const SELECTORS = {
     ZOOM_SELECTOR: ".zoom-selector",
     ZOOM_HANDLE: ".zoom-handle",

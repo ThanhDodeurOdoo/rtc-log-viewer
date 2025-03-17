@@ -1,4 +1,5 @@
 :root {
+
     /* Color system */
     --primary-color: #3498db;
     --secondary-color: #2980b9;
@@ -1083,6 +1084,7 @@ label {
 /* Zoom handles */
 .zoom-handle {
     position: absolute;
+    cursor: ew-resize;
     top: 50%;
     width: 4px;
     height: 24px;

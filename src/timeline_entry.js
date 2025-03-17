@@ -762,8 +762,12 @@ export class TimelineEntry extends Component {
         if (!time) {
             return "";
         }
-        const date = new Date(time);
-        return date.toISOString().split("T")[1].replace("Z", "");
+        try {
+            const date = new Date(time);
+            return date.toISOString().split("T")[1].replace("Z", "");
+        } catch {
+            return "";
+        }
     }
 
     toggleEventGroupPopup(group, e, sessionId, groupIndex) {
