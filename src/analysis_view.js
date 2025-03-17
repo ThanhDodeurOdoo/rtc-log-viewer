@@ -371,6 +371,8 @@ export class AnalysisView extends Component {
             case "Multiple issues for Session":
                 return "This session has multiple issues. Review each instance for specific recommendations.";
 
+            case "SFU Server Error (known)":
+                return "This is a known issue and should not cause any problems.";
             default:
                 return "Investigate the logs further for more context about this issue.";
         }
@@ -542,17 +544,25 @@ export class AnalysisView extends Component {
                 continue;
             }
 
-            if (snapshot.server.errors.length > 0) {
-                results.push({
-                    type: ISSUE_TYPES.ERROR,
-                    title: "SFU Server Errors",
-                    description:
-                        "The SFU server reported errors, affecting the connection quality.",
-                    timestamp,
-                    details: {
-                        serverErrors: snapshot.server.errors,
-                    },
-                });
+            for (const error of snapshot.server.errors) {
+                switch (error) {
+                    case "Cannot read properties of undefined (reading 'produce')":
+                        results.push({
+                            type: ISSUE_TYPES.WARNING,
+                            title: "SFU Server Error (known)",
+                            description: "Eager usage of `updateUpload()`",
+                            timestamp,
+                        });
+                        break;
+                    default:
+                        results.push({
+                            type: ISSUE_TYPES.ERROR,
+                            title: "SFU Server Error",
+                            description: error,
+                            timestamp,
+                        });
+                        break;
+                }
             }
         }
     }
