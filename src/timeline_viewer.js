@@ -23,6 +23,7 @@ export class TimelineViewer extends Component {
                     <TimelineEntry 
                         timelineKey="timelineKey"
                         timelineData="props.logs.timelines[timelineKey]"
+                        lastRelevantTimestamp="props.lastRelevantTimestamp"
                     />
                 </div>
             </div>

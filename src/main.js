@@ -162,6 +162,7 @@ export class Main extends Component {
                     <TimelineViewer 
                         t-if="state.activeView === 'timelines'" 
                         logs="state.filteredLogs"
+                        lastRelevantTimestamp="lastRelevantTimestamp"
                     />
                     
                     <!-- Snapshots View -->
@@ -415,5 +416,10 @@ export class Main extends Component {
             return [];
         }
         return Object.keys(this.state.filteredLogs.snapshots).sort();
+    }
+
+    // todo, do it in timeline viewer to avoid 1 layer of props forwarding?
+    get lastRelevantTimestamp() {
+        return this.snapshotKeys.at(-1);
     }
 }

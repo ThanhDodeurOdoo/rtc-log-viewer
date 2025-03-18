@@ -267,6 +267,14 @@ export class TimelineEntry extends Component {
         this.state.eventGroupPopupStyle = popupStyle;
     }
 
+    get endDate() {
+        const endStamp = this.props.timelineData.end || this.props.lastRelevantTimestamp;
+        if (!endStamp) {
+            return new Date();
+        }
+        return new Date(endStamp);
+    }
+
     get sessionIds() {
         const timelineData = this.props.timelineData;
         if (!timelineData || !timelineData.entriesBySessionId) {
@@ -322,12 +330,12 @@ export class TimelineEntry extends Component {
         }
 
         const timelineData = this.props.timelineData;
-        if (!timelineData || !timelineData.start || !timelineData.end) {
+        if (!timelineData || !timelineData.start) {
             return 0;
         }
 
         const start = new Date(timelineData.start).getTime();
-        const end = new Date(timelineData.end || new Date().toISOString()).getTime();
+        const end = this.endDate.getTime();
 
         if (!start || !end || end <= start) {
             return 0;
@@ -390,7 +398,7 @@ export class TimelineEntry extends Component {
         }
 
         const fullStartTime = new Date(timelineData.start);
-        const fullEndTime = new Date(timelineData.end || new Date().toISOString());
+        const fullEndTime = this.endDate;
         const fullRange = fullEndTime.getTime() - fullStartTime.getTime();
 
         // If no zoom, show full range
@@ -864,7 +872,7 @@ export class TimelineEntry extends Component {
         }
 
         const start = new Date(timelineData.start);
-        const end = new Date(timelineData.end || new Date().toISOString());
+        const end = this.endDate;
         return end.getTime() - start.getTime();
     }
 

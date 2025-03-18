@@ -4,4 +4,3 @@ Log viewer for Odoo RTC feature
 
 #Roadmap
 
-* Group issues from analysis
