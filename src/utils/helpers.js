@@ -53,17 +53,16 @@ export function getSessionStateClass(session) {
 }
 
 export function getConnectionStateClass(state) {
-    if (!state) {
-        return "";
+    switch (state) {
+        case "connected":
+            return "connected";
+        case "connecting":
+        case "authenticated":
+        case "recovering":
+            return "connecting";
+        default:
+            return "disconnected";
     }
-
-    if (state.includes("connected")) {
-        return "connected";
-    }
-    if (state.includes("connecting")) {
-        return "connecting";
-    }
-    return "disconnected";
 }
 
 export function getAudioState(state) {
