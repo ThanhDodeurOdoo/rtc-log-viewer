@@ -91,13 +91,13 @@ export class TimelineEntry extends Component {
                                         class="event-group"
                                         t-att-id="'event-group-' + sessionId + '-' + group_index"
                                         t-attf-style="left: {{ getGroupPosition(group) }}%;"
-                                        t-on-click="(e) => this.toggleEventGroupPopup(group, e, sessionId, group_index)"
+                                        t-on-click.stop="(e) => this.toggleEventGroupPopup(group, e, sessionId, group_index)"
                                     >
                                         <!-- Single event or group indicator -->
                                         <div
                                             t-if="group.length === 1"
                                             t-attf-class="timeline-event {{ group[0].level || LOG_LEVEL_CLASSES.INFO }}"
-                                            t-on-click="(e) => { e.stopPropagation(); this.highlightEvent(sessionId, group[0].index); }"
+                                            t-on-click.stop="(e) => { this.highlightEvent(sessionId, group[0].index); }"
                                             t-on-mouseenter="(e) => this.showTooltip(group[0], e)"
                                             t-on-mouseleave="hideTooltip"
                                         ></div>
@@ -763,8 +763,6 @@ export class TimelineEntry extends Component {
     }
 
     toggleEventGroupPopup(group, e, sessionId, groupIndex) {
-        e.stopPropagation();
-
         // If it's a single event, just highlight it
         if (group.length === 1) {
             this.highlightEvent(sessionId, group[0].index);
