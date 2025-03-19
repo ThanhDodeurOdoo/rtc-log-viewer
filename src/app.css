@@ -1007,6 +1007,7 @@ label {
 
 /* Timeline segments by connection state */
 .timeline-segment {
+    cursor: help,
     position: absolute;
     top: 13px;
     height: 4px;
