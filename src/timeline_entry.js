@@ -373,9 +373,9 @@ export class TimelineEntry extends Component {
             const channelId = this.props.timelineData.channelId;
             const selfSessionId = this.props.timelineData.selfSessionId;
 
-            return `Timeline: Channel ${channelId} - Session ${selfSessionId} - ${formattedDate}`;
+            return `Channel ${channelId} - Session ${selfSessionId} - ${formattedDate}`;
         } catch {
-            return `Timeline: ${this.props.timelineKey}`;
+            return `${this.props.timelineKey}`;
         }
     }
 
