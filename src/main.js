@@ -16,7 +16,7 @@ export class Main extends Component {
             >
                 <h2>RTC Log Viewer</h2>
                 <p>Upload a JSON log file (<a target="_blank" href="https://www.odoo.com/knowledge/article/28833">from Odoo Discuss RTC</a>)</p>
-                
+                <p class="download-info">logs are analyzed locally and stay on your device</p>
                 <div class="drop-zone">
                     <div class="drop-zone-prompt">
                         <i class="drop-icon"></i>

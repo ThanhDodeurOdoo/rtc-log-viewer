@@ -45,6 +45,7 @@
 
     /* Typography */
     --font-family: monospace;
+    --font-size-xxs: 0.625rem;
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.875rem;
     --font-size-base: 1rem;
@@ -237,6 +238,11 @@ label {
     box-shadow: var(--shadow-sm);
     overflow: auto;
     max-height: 90vh;
+}
+
+.download-info {
+    font-size: var(--font-size-xxs);
+    font-style: italic;
 }
 
 /* Panel with header and content structure */
@@ -1007,7 +1013,7 @@ label {
 
 /* Timeline segments by connection state */
 .timeline-segment {
-    cursor: help,
+    cursor: help;
     position: absolute;
     top: 13px;
     height: 4px;
