@@ -88,11 +88,6 @@ export function getNetworkState(state) {
     return states[state] || state;
 }
 
-/**
- * Format a duration in milliseconds to a human-readable string
- * @param {number} ms - Duration in milliseconds
- * @returns {string} Formatted duration string
- */
 export function formatDuration(ms) {
     if (!ms || ms < 0) {
         return "0s";
@@ -118,14 +113,6 @@ export function formatDuration(ms) {
     return `${hours}h ${remainingMinutes}m ${remainingSeconds}.${milliseconds.toFixed(0)}s`;
 }
 
-/**
- * Calculate a visible time range based on zoom level and pan position
- * @param {string} startTime - ISO string of timeline start time
- * @param {string} endTime - ISO string of timeline end time
- * @param {number} zoomLevel - Value from 1-10 where 1 is full range
- * @param {number} panPosition - Value from 0-1 representing position in zoomed timeline
- * @returns {Object} Object with visible start and end times
- */
 export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosition) {
     if (!startTime || !endTime) {
         return {
@@ -140,7 +127,6 @@ export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosi
     const fullEndTime = new Date(endTime);
     const fullRange = fullEndTime.getTime() - fullStartTime.getTime();
 
-    // If no zoom, show full range
     if (zoomLevel <= 1) {
         return {
             visibleStartTime: fullStartTime,
@@ -150,16 +136,10 @@ export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosi
         };
     }
 
-    // Calculate visible range based on zoom
     const visibleRangeDuration = fullRange / zoomLevel;
-
-    // Calculate the maximum possible pan offset
     const maxPanOffset = fullRange - visibleRangeDuration;
-
-    // Apply pan position (0 = start, 1 = end)
     const panOffset = Math.min(maxPanOffset, maxPanOffset * panPosition);
 
-    // Calculate visible start and end times
     const visibleStartTime = new Date(fullStartTime.getTime() + panOffset);
     const visibleEndTime = new Date(visibleStartTime.getTime() + visibleRangeDuration);
 
@@ -171,18 +151,11 @@ export function calculateVisibleTimeRange(startTime, endTime, zoomLevel, panPosi
     };
 }
 
-/**
- * Group events that are positioned close to each other on the timeline
- * @param {Array} events - Array of event objects with position property
- * @param {number} threshold - Threshold percentage for considering events as clustered
- * @returns {Array} Array of event groups (each group is an array of events)
- */
 export function groupCloseEvents(events, threshold = 5) {
     if (!events || !events.length) {
         return [];
     }
 
-    // Sort events by position
     const sortedEvents = [...events].sort((a, b) => a.position - b.position);
 
     const groups = [];
@@ -210,12 +183,6 @@ export function groupCloseEvents(events, threshold = 5) {
     return groups;
 }
 
-/**
- * Check if a log event contains specific text
- * @param {Object} log - Log event object
- * @param {string} pattern - Text pattern to search for
- * @returns {boolean} True if the pattern is found
- */
 export function eventContains(log, pattern) {
     if (!log || !log.event) {
         return false;
@@ -225,11 +192,7 @@ export function eventContains(log, pattern) {
     return text.includes(pattern);
 }
 
-/**
- * Get the severity level of a log event based on its content
- * @param {Object} log - Log event object
- * @returns {string} Severity level: 'info', 'warning', or 'error'
- */
+/** Returns 'info', 'warning', or 'error' based on log level and content keywords */
 export function getEventSeverity(log) {
     if (!log) {
         return "info";
@@ -248,7 +211,6 @@ export function getEventSeverity(log) {
         return "warning";
     }
 
-    // Check for error keywords in the event text
     const text = formatEventText(log);
     const errorKeywords = ["error", "failed", "failure", "exception", "crash"];
     const warningKeywords = ["warning", "attempting to recover", "disconnect"];
@@ -264,11 +226,6 @@ export function getEventSeverity(log) {
     return "info";
 }
 
-/**
- * Extract connection state from event text
- * @param {Object} log - Log event object
- * @returns {string|null} Connection state or null if not found
- */
 export function extractConnectionState(log) {
     if (!log || !log.event) {
         return null;
@@ -276,13 +233,11 @@ export function extractConnectionState(log) {
 
     const text = formatEventText(log);
 
-    // Look for connection state changes
     if (text.includes("connection state change:")) {
         const statePart = text.split("connection state change:")[1].trim();
         return statePart;
     }
 
-    // Check for session deletion/closing events
     if (
         text.includes("peer removed") ||
         text.includes("session deleted") ||

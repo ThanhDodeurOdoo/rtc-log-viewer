@@ -302,7 +302,6 @@ export class TimelineEntry extends Component {
         });
     }
 
-    // Get all events across all sessions for overview
     getAllEventsMinimal() {
         const allEvents = [];
         const sessionIds = this.sessionIds;
@@ -323,7 +322,6 @@ export class TimelineEntry extends Component {
         return allEvents;
     }
 
-    // Calculate position in full timeline (0-100%)
     calculateFullPosition(timestamp) {
         if (!timestamp) {
             return 0;
@@ -390,7 +388,6 @@ export class TimelineEntry extends Component {
         return sessionId === this.props.timelineData.selfSessionId?.toString();
     }
 
-    // Get the visible time range based on zoom level and position
     getVisibleTimeRange() {
         const timelineData = this.props.timelineData;
         if (!timelineData) {
@@ -429,7 +426,6 @@ export class TimelineEntry extends Component {
         };
     }
 
-    // Extract timestamp from event for timeline positioning
     getEventTimestamp(event) {
         if (!event || !event.event) {
             return null;
@@ -458,7 +454,6 @@ export class TimelineEntry extends Component {
         return new Date().getTime();
     }
 
-    // Calculate position along timeline (0-100%) considering zoom
     calculateEventPosition(timestamp) {
         if (!timestamp) {
             return 0;
@@ -484,7 +479,6 @@ export class TimelineEntry extends Component {
         return ((timestamp - start) / (end - start)) * 100;
     }
 
-    // Process events for visual timeline
     getProcessedEvents(sessionId, applyVisibilityFilter = true) {
         const events = this.getSessionEvents(sessionId);
         if (!events || events.length === 0) {
@@ -529,7 +523,6 @@ export class TimelineEntry extends Component {
             .filter((event) => event !== null);
     }
 
-    // Check if an event is within the visible time range
     isEventVisible(timestamp) {
         if (!timestamp) {
             return false;
@@ -578,7 +571,6 @@ export class TimelineEntry extends Component {
             return initialGroups;
         }
 
-        // Step 2: Recursive function to merge groups until they're spaced adequately
         const mergeGroupsUntilSpaced = (groups) => {
             // Check if groups have adequate spacing
             let needsMerging = false;
@@ -629,7 +621,6 @@ export class TimelineEntry extends Component {
         return mergeGroupsUntilSpaced(initialGroups);
     }
 
-    // Get position for a group (average of all events in group)
     getGroupPosition(group) {
         if (!group || group.length === 0) {
             return 0;
@@ -640,7 +631,6 @@ export class TimelineEntry extends Component {
         return sum / group.length;
     }
 
-    // Extract connection state from event text
     extractConnectionState(event) {
         if (!event || !event.event) {
             return null;
@@ -666,7 +656,6 @@ export class TimelineEntry extends Component {
         return null;
     }
 
-    // Generate segments for the timeline based on connection states
     getConnectionStateSegments(sessionId) {
         const events = this.getProcessedEvents(sessionId, false); // Get all events without filtering for position calculation
         const isSelfSession = this.isSessionSelf(sessionId);
@@ -727,7 +716,6 @@ export class TimelineEntry extends Component {
         return segments;
     }
 
-    // Get connection state segments adjusted for visible time range
     getVisibleConnectionStateSegments(sessionId) {
         const segments = this.getConnectionStateSegments(sessionId);
         if (this.state.zoomLevel <= 1) {
@@ -802,7 +790,6 @@ export class TimelineEntry extends Component {
         this.state.clickedEventElement = null;
     }
 
-    // Highlight an event in the list when clicked in the timeline
     highlightEvent(sessionId, index) {
         // Make sure session details are expanded
         if (!this.state.expandedSessions[sessionId]) {
@@ -862,9 +849,6 @@ export class TimelineEntry extends Component {
         }
     }
 
-    /**
-     * @returns {number} Total duration of the timeline in milliseconds
-     */
     getTimelineTotalDuration() {
         const timelineData = this.props.timelineData;
         if (!timelineData) {

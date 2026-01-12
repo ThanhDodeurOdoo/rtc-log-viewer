@@ -150,6 +150,14 @@ export class AnalysisView extends Component {
                     </div>
                 </div>
             </div>
+            
+            <div class="useful-links">
+                <h4>Useful Resources</h4>
+                <ul>
+                    <li><a href="https://www.odoo.com/knowledge/article/28832" target="_blank" rel="noopener noreferrer">Odoo RTC Configuration Documentation</a></li>
+                    <li><a href="https://www.odoo.com/knowledge/article/28833" target="_blank" rel="noopener noreferrer">Odoo RTC Troubleshooting Documentation</a></li>
+                </ul>
+            </div>
         </div>
     `;
 
