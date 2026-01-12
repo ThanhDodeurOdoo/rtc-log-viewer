@@ -272,16 +272,24 @@ describe("Log Class", () => {
         });
 
         test("should continue calling other callbacks if one throws", () => {
+            // Silence expected console.error from the error handler
+            const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
             const errorCallback = jest.fn(() => {
                 throw new Error("Test error");
             });
             const successCallback = jest.fn();
 
-            Log.onChange(errorCallback);
-            Log.onChange(successCallback);
+            const unsubscribeError = Log.onChange(errorCallback);
+            const unsubscribeSuccess = Log.onChange(successCallback);
 
             expect(() => Log.load(testData)).not.toThrow();
             expect(successCallback).toHaveBeenCalledTimes(1);
+
+            // Cleanup: unsubscribe to prevent callback from firing in subsequent tests
+            unsubscribeError();
+            unsubscribeSuccess();
+            consoleSpy.mockRestore();
         });
     });
 
