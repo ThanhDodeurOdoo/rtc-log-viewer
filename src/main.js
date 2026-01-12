@@ -4,11 +4,12 @@ import { SnapshotViewer } from "./snapshot_viewer.js";
 import { AnalysisView } from "./analysis_view.js";
 import helpers from "./utils/helpers.js";
 import { NoData } from "./common/ui_components.js";
+import { Log } from "./models/log.js";
 
 export class Main extends Component {
     static template = xml`
         <div id="main" class="rtc-log-viewer">
-            <div t-if="!state.logs"
+            <div t-if="!Log.isLoaded"
                 t-attf-class="file-upload-container {{ state.isDragOver ? 'drag-over' : '' }}"
                 t-on-dragover.prevent.stop="onDragOver"
                 t-on-dragleave.prevent.stop="onDragLeave"
@@ -33,22 +34,22 @@ export class Main extends Component {
                 </div>
             </div>
             
-            <div t-if="state.logs" class="log-content">
+            <div t-if="Log.isLoaded" class="log-content">
                 <div class="info-panel">
                     <div class="system-info">
                         <h3>System Information</h3>
                         <table>
-                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.server_version">
+                            <tr t-if="Log.odooInfo and Log.odooInfo.server_version">
                                 <td>Server Version:</td>
-                                <td t-esc="state.logs.odooInfo.server_version"></td>
+                                <td t-esc="Log.odooInfo.server_version"></td>
                             </tr>
-                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.db">
+                            <tr t-if="Log.odooInfo and Log.odooInfo.db">
                                 <td>Database:</td>
-                                <td t-esc="state.logs.odooInfo.db"></td>
+                                <td t-esc="Log.odooInfo.db"></td>
                             </tr>
-                            <tr t-if="state.logs.odooInfo and state.logs.odooInfo.isEnterprise !== undefined">
+                            <tr t-if="Log.odooInfo and Log.odooInfo.isEnterprise !== undefined">
                                 <td>Enterprise:</td>
-                                <td t-esc="state.logs.odooInfo.isEnterprise ? 'Yes' : 'No'"></td>
+                                <td t-esc="Log.odooInfo.isEnterprise ? 'Yes' : 'No'"></td>
                             </tr>
                         </table>
                     </div>
@@ -67,11 +68,11 @@ export class Main extends Component {
                         </div>
                         
                         <!-- Timeline Filters -->
-                        <div t-if="timelineKeys.length > 0" class="filter-section">
+                        <div t-if="Log.timelineKeys.length > 0" class="filter-section">
                             <div class="filter-header" t-on-click="toggleTimelineFilters">
                                 <h4>Timelines</h4>
                                 <span class="filter-count">
-                                    (<t t-esc="state.selectedTimelines.size" /> / <t t-esc="timelineKeys.length" />)
+                                    (<t t-esc="Log.selectedTimelines.size" /> / <t t-esc="Log.timelineKeys.length" />)
                                 </span>
                                 <button 
                                     t-attf-class="filter-toggle {{ state.showTimelineFilters ? 'expanded' : 'collapsed' }}"
@@ -89,19 +90,19 @@ export class Main extends Component {
                                 
                                 <div class="filter-items">
                                     <div 
-                                        t-foreach="timelineKeys" 
+                                        t-foreach="Log.timelineKeys" 
                                         t-as="timelineKey" 
                                         t-key="timelineKey"
                                         class="filter-item"
-                                        t-att-title="formatTimelineLabel(timelineKey)"
+                                        t-att-title="Log.formatTimelineLabel(timelineKey)"
                                     >
                                         <label class="checkbox-label">
                                             <input 
                                                 type="checkbox" 
-                                                t-att-checked="state.selectedTimelines.has(timelineKey)"
+                                                t-att-checked="Log.selectedTimelines.has(timelineKey)"
                                                 t-on-change="() => this.toggleTimeline(timelineKey)"
                                             />
-                                            <span class="timeline-label" t-esc="formatTimelineLabel(timelineKey)"></span>
+                                            <span class="timeline-label" t-esc="Log.formatTimelineLabel(timelineKey)"></span>
                                         </label>
                                     </div>
                                 </div>
@@ -109,11 +110,11 @@ export class Main extends Component {
                         </div>
                         
                         <!-- Snapshot Filters -->
-                        <div t-if="snapshotKeys.length > 0" class="filter-section">
+                        <div t-if="Log.snapshotKeys.length > 0" class="filter-section">
                             <div class="filter-header" t-on-click="toggleSnapshotFilters">
                                 <h4>Snapshots</h4>
                                 <span class="filter-count">
-                                    (<t t-esc="state.selectedSnapshots.size" /> / <t t-esc="snapshotKeys.length" />)
+                                    (<t t-esc="Log.selectedSnapshots.size" /> / <t t-esc="Log.snapshotKeys.length" />)
                                 </span>
                                 <button 
                                     t-attf-class="filter-toggle {{ state.showSnapshotFilters ? 'expanded' : 'collapsed' }}"
@@ -131,7 +132,7 @@ export class Main extends Component {
                                 
                                 <div class="filter-items">
                                     <div 
-                                        t-foreach="snapshotKeys" 
+                                        t-foreach="Log.snapshotKeys" 
                                         t-as="snapshotKey" 
                                         t-key="snapshotKey"
                                         class="filter-item"
@@ -139,10 +140,10 @@ export class Main extends Component {
                                         <label class="checkbox-label">
                                             <input 
                                                 type="checkbox" 
-                                                t-att-checked="state.selectedSnapshots.has(snapshotKey)"
+                                                t-att-checked="Log.selectedSnapshots.has(snapshotKey)"
                                                 t-on-change="() => this.toggleSnapshot(snapshotKey)"
                                             />
-                                            <span class="snapshot-label" t-esc="formatSnapshotLabel(snapshotKey)"></span>
+                                            <span class="snapshot-label" t-esc="Log.formatSnapshotLabel(snapshotKey)"></span>
                                         </label>
                                     </div>
                                 </div>
@@ -155,14 +156,14 @@ export class Main extends Component {
                     <!-- Analysis View -->
                     <AnalysisView 
                         t-if="state.activeView === 'analysis'" 
-                        logs="state.filteredLogs"
+                        logs="Log.filteredLogs"
                     />
                     
                     <!-- Timelines View -->
                     <TimelineViewer 
                         t-if="state.activeView === 'timelines'" 
-                        logs="state.filteredLogs"
-                        lastRelevantTimestamp="lastRelevantTimestamp"
+                        logs="Log.filteredLogs"
+                        lastRelevantTimestamp="Log.lastRelevantTimestamp"
                     />
                     
                     <!-- Snapshots View -->
@@ -171,20 +172,20 @@ export class Main extends Component {
                         <p class="view-description">Each snapshot shows the complete state of all sessions at a specific moment.</p>
                         
                         <NoData 
-                            t-if="!filteredSnapshotKeys.length" 
+                            t-if="!Log.filteredSnapshotKeys.length" 
                             message="'No snapshot data available in this log file'"
                         />
                         
                         <div t-else="" class="snapshot-list">
                             <div 
-                                t-foreach="filteredSnapshotKeys" 
+                                t-foreach="Log.filteredSnapshotKeys" 
                                 t-as="snapshotKey" 
                                 t-key="snapshotKey"
                                 class="snapshot-entry"
                             >
                                 <SnapshotViewer 
                                     snapshotKey="snapshotKey"
-                                    snapshotData="state.filteredLogs.snapshots[snapshotKey]"
+                                    snapshotData="Log.filteredSnapshots[snapshotKey]"
                                 />
                             </div>
                         </div>
@@ -194,7 +195,7 @@ export class Main extends Component {
                     <div t-if="state.activeView === 'raw'" class="raw-data-container">
                         <h3>Raw Log Data</h3>
                         <div class="raw-data">
-                            <pre t-esc="window.JSON.stringify(state.logs, null, 2)"></pre>
+                            <pre t-esc="window.JSON.stringify(Log.rawData, null, 2)"></pre>
                         </div>
                     </div>
                 </div>
@@ -210,14 +211,11 @@ export class Main extends Component {
     };
 
     setup() {
+        // UI-only state (data state is in Log singleton)
         this.state = useState({
-            logs: null,
-            filteredLogs: null,
             fileName: "",
             activeView: "analysis",
             isDragOver: false,
-            selectedTimelines: new Set(),
-            selectedSnapshots: new Set(),
             showTimelineFilters: false,
             showSnapshotFilters: false,
         });
@@ -229,77 +227,45 @@ export class Main extends Component {
             { id: "raw", label: "Raw Data" },
         ];
         this.helpers = helpers;
+
+        // Expose Log to template
+        this.Log = Log;
+
+        // Subscribe to Log changes to trigger re-renders
+        this._unsubscribe = Log.onChange(() => {
+            // Force OWL to re-render by toggling a dummy state
+            this.render();
+        });
+    }
+
+    willUnmount() {
+        if (this._unsubscribe) {
+            this._unsubscribe();
+        }
     }
 
     toggleTimeline(timelineKey) {
-        if (this.state.selectedTimelines.has(timelineKey)) {
-            this.state.selectedTimelines.delete(timelineKey);
-        } else {
-            this.state.selectedTimelines.add(timelineKey);
-        }
-        this.updateFilteredLogs();
+        Log.toggleTimeline(timelineKey);
     }
 
     toggleSnapshot(snapshotKey) {
-        if (this.state.selectedSnapshots.has(snapshotKey)) {
-            this.state.selectedSnapshots.delete(snapshotKey);
-        } else {
-            this.state.selectedSnapshots.add(snapshotKey);
-        }
-        this.updateFilteredLogs();
+        Log.toggleSnapshot(snapshotKey);
     }
 
     toggleAllTimelines(select = true) {
         if (select) {
-            this.state.selectedTimelines = new Set(Object.keys(this.state.logs.timelines || {}));
+            Log.selectAllTimelines();
         } else {
-            this.state.selectedTimelines.clear();
+            Log.deselectAllTimelines();
         }
-        this.updateFilteredLogs();
     }
 
     toggleAllSnapshots(select = true) {
         if (select) {
-            this.state.selectedSnapshots = new Set(Object.keys(this.state.logs.snapshots || {}));
+            Log.selectAllSnapshots();
         } else {
-            this.state.selectedSnapshots.clear();
+            Log.deselectAllSnapshots();
         }
-        this.updateFilteredLogs();
-    }
-
-    updateFilteredLogs() {
-        if (!this.state.logs) {
-            return;
-        }
-
-        const filtered = {};
-
-        for (const key in this.state.logs) {
-            if (key !== "timelines" && key !== "snapshots") {
-                filtered[key] = this.state.logs[key];
-            }
-        }
-
-        if (this.state.logs.timelines) {
-            filtered.timelines = {};
-            Object.keys(this.state.logs.timelines).forEach((key) => {
-                if (this.state.selectedTimelines.has(key)) {
-                    filtered.timelines[key] = this.state.logs.timelines[key];
-                }
-            });
-        }
-
-        // Filter snapshots
-        if (this.state.logs.snapshots) {
-            filtered.snapshots = {};
-            Object.keys(this.state.logs.snapshots).forEach((key) => {
-                if (this.state.selectedSnapshots.has(key)) {
-                    filtered.snapshots[key] = this.state.logs.snapshots[key];
-                }
-            });
-        }
-
-        this.state.filteredLogs = filtered;
     }
 
     toggleTimelineFilters() {
@@ -308,24 +274,6 @@ export class Main extends Component {
 
     toggleSnapshotFilters() {
         this.state.showSnapshotFilters = !this.state.showSnapshotFilters;
-    }
-
-    formatTimelineLabel(timelineKey) {
-        try {
-            const date = new Date(timelineKey);
-            return `Timeline: ${date.toLocaleString()}`;
-        } catch {
-            return `Timeline: ${timelineKey}`;
-        }
-    }
-
-    formatSnapshotLabel(snapshotKey) {
-        try {
-            const date = new Date(snapshotKey);
-            return `Snapshot: ${date.toLocaleString()}`;
-        } catch {
-            return `Snapshot: ${snapshotKey}`;
-        }
     }
 
     triggerFileInput() {
@@ -374,7 +322,7 @@ export class Main extends Component {
         reader.onload = (e) => {
             try {
                 const logs = JSON.parse(e.target.result);
-                this.processParsedLogs(logs);
+                Log.load(logs);
             } catch {
                 alert("Error parsing the log file. Please ensure it is a valid JSON file.");
             }
@@ -382,44 +330,7 @@ export class Main extends Component {
         reader.readAsText(file);
     }
 
-    processParsedLogs(logs) {
-        this.state.logs = logs;
-        if (logs.timelines) {
-            this.state.selectedTimelines = new Set(Object.keys(logs.timelines));
-        }
-        if (logs.snapshots) {
-            this.state.selectedSnapshots = new Set(Object.keys(logs.snapshots));
-        }
-        this.updateFilteredLogs();
-    }
-
     setActiveView(viewId) {
         this.state.activeView = viewId;
-    }
-
-    get timelineKeys() {
-        if (!this.state.logs || !this.state.logs.timelines) {
-            return [];
-        }
-        return Object.keys(this.state.logs.timelines).sort();
-    }
-
-    get snapshotKeys() {
-        if (!this.state.logs || !this.state.logs.snapshots) {
-            return [];
-        }
-        return Object.keys(this.state.logs.snapshots).sort();
-    }
-
-    get filteredSnapshotKeys() {
-        if (!this.state.filteredLogs || !this.state.filteredLogs.snapshots) {
-            return [];
-        }
-        return Object.keys(this.state.filteredLogs.snapshots).sort();
-    }
-
-    // todo, do it in timeline viewer to avoid 1 layer of props forwarding?
-    get lastRelevantTimestamp() {
-        return this.snapshotKeys.at(-1);
     }
 }
