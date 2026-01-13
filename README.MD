@@ -1,5 +1,6 @@
 # RTC Log Viewer
 [![Tests](https://github.com/ThanhDodeurOdoo/rtc-log-viewer/actions/workflows/tests.yml/badge.svg)](https://github.com/ThanhDodeurOdoo/rtc-log-viewer/actions/workflows/tests.yml)
+[![Deployment](https://github.com/ThanhDodeurOdoo/rtc-log-viewer/actions/workflows/pages/pages-build-deployment/badge.svg)](https://thanhdodeurodoo.github.io/rtc-log-viewer/)
 
 Use it at: https://thanhdodeurodoo.github.io/rtc-log-viewer/
 
