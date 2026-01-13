@@ -200,6 +200,11 @@ export class Main extends Component {
                     </div>
                 </div>
             </div>
+
+            <footer class="app-footer">
+                <p>Powered by <a href="https://github.com/odoo/owl" target="_blank">odoo/OWL</a></p>
+                <p>Source code on <a href="https://github.com/ThanhDodeurOdoo/rtc-log-viewer" target="_blank">GitHub</a></p>
+            </footer>
         </div>
     `;
 

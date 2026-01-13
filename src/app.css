@@ -240,6 +240,10 @@ label {
     max-height: 90vh;
 }
 
+.app-footer {
+    padding: var(--space-lg);
+}
+
 .download-info {
     font-size: var(--font-size-xxs);
     font-style: italic;
