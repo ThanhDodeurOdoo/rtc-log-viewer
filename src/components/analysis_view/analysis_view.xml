@@ -2,7 +2,7 @@
     <t t-name="AnalysisView">
         <div class="analysis-view">
             <h3>Connection Analysis [⚠️WORK IN PROGESS⚠️]</h3>
-            <p class="view-description">Automatic analysis of connection issues and potential problems.</p>
+            <p class="view-description">Automatic analysis of connection issues and potential problems. The results may be false positives.</p>
             <NoData t-if="!this.hasLogData()" message="'No log data available for analysis'" />
             <div t-else="" class="analysis-content">
                 <div t-if="this.isAnalyzing()" class="loading-analysis">
