@@ -1,4 +1,4 @@
-const { Component, xml, proxy, useEffect, computed, plugin } = owl;
+const { Component, xml, signal, useEffect, computed, plugin } = owl;
 import helpers from "./utils/helpers.js";
 import { NoData } from "./common/ui_components.js";
 import { LogPlugin } from "./plugins/log_plugin.js";
@@ -35,11 +35,11 @@ export class AnalysisView extends Component {
                 message="'No log data available for analysis'"
             />
             <div t-else="" class="analysis-content">
-                <div t-if="this.state.isAnalyzing" class="loading-analysis">
+                <div t-if="this.isAnalyzing()" class="loading-analysis">
                     <p>Analyzing connection logs...</p>
                 </div>
                 
-                <div t-elif="this.state.groupedResults.length === 0" class="no-issues-found">
+                <div t-elif="this.groupedResults().length === 0" class="no-issues-found">
                     <h4>No Issues Detected</h4>
                     <p>The analysis did not find any significant connection problems in the logs.</p>
                 </div>
@@ -48,7 +48,7 @@ export class AnalysisView extends Component {
                     <h4>Analysis Results</h4>
                     <div class="issue-list">
                         <div
-                            t-foreach="this.state.groupedResults"
+                            t-foreach="this.groupedResults()"
                             t-as="group"
                             t-key="group_index"
                             t-attf-class="issue-item {{ group.type }}"
@@ -63,16 +63,16 @@ export class AnalysisView extends Component {
                                 </h5>
                                 
                                 <button
-                                    t-attf-class="issue-toggle {{ this.state.expandedIssues[group_index] ? 'expanded' : 'collapsed' }}"
+                                    t-attf-class="issue-toggle {{ this.expandedIssues()[group_index] ? 'expanded' : 'collapsed' }}"
                                     t-on-click.stop="() => this.toggleIssueDetails(group_index)"
                                 >
-                                    <t t-out="this.state.expandedIssues[group_index] ? '▼' : '►'" />
+                                    <t t-out="this.expandedIssues()[group_index] ? '▼' : '►'" />
                                 </button>
                             </div>
                             
                             <div class="issue-description" t-out="group.description"></div>
                             
-                            <div t-if="this.state.expandedIssues[group_index]" class="issue-details">
+                            <div t-if="this.expandedIssues()[group_index]" class="issue-details">
                                 <div class="issue-recommendation">
                                     <h6>Recommendation</h6>
                                     <p t-out="this.getRecommendation(group)"></p>
@@ -94,14 +94,14 @@ export class AnalysisView extends Component {
                                             </h6>
                                             
                                             <button
-                                                t-attf-class="instance-toggle {{ this.state.expandedInstances[group_index + '-' + instance_index] ? 'expanded' : 'collapsed' }}"
+                                                t-attf-class="instance-toggle {{ this.expandedInstances()[group_index + '-' + instance_index] ? 'expanded' : 'collapsed' }}"
                                                 t-on-click.stop="() => this.toggleInstanceDetails(group_index, instance_index)"
                                             >
-                                                <t t-out="this.state.expandedInstances[group_index + '-' + instance_index] ? '▼' : '►'" />
+                                                <t t-out="this.expandedInstances()[group_index + '-' + instance_index] ? '▼' : '►'" />
                                             </button>
                                         </div>
                                         
-                                        <div t-if="this.state.expandedInstances[group_index + '-' + instance_index]" class="instance-details">
+                                        <div t-if="this.expandedInstances()[group_index + '-' + instance_index]" class="instance-details">
                                             <div t-if="instance.timestamp" class="issue-metadata">
                                                 <span class="metadata-label">Detected at:</span>
                                                 <span class="metadata-value" t-out="this.helpers.formatTime(instance.timestamp)"></span>
@@ -165,13 +165,11 @@ export class AnalysisView extends Component {
     static components = { NoData };
     setup() {
         this.log = plugin(LogPlugin);
-        this.state = proxy({
-            rawResults: [],
-            groupedResults: [],
-            isAnalyzing: false,
-            expandedIssues: {},
-            expandedInstances: {},
-        });
+        this.rawResults = signal.Array([]);
+        this.groupedResults = signal.Array([]);
+        this.isAnalyzing = signal(false);
+        this.expandedIssues = signal.Object({});
+        this.expandedInstances = signal.Object({});
         this.helpers = helpers;
         this.hasLogData = computed(() => {
             const logs = this.log.filteredLogs();
@@ -180,8 +178,8 @@ export class AnalysisView extends Component {
         useEffect(() => {
             const logs = this.log.filteredLogs();
             if (!logs || (!logs.timelines && !logs.snapshots)) {
-                this.state.rawResults = [];
-                this.state.groupedResults = [];
+                this.rawResults.set([]);
+                this.groupedResults.set([]);
                 return;
             }
             this.analyzeData(logs);
@@ -189,7 +187,7 @@ export class AnalysisView extends Component {
     }
 
     analyzeData(logs) {
-        this.state.isAnalyzing = true;
+        this.isAnalyzing.set(true);
 
         try {
             const results = [];
@@ -202,15 +200,15 @@ export class AnalysisView extends Component {
             this.checkCandidateTypes(logs, results);
 
             this.sortResultsBySeverity(results);
-            this.state.rawResults = results;
+            this.rawResults.set(results);
             this.groupResults();
         } finally {
-            this.state.isAnalyzing = false;
+            this.isAnalyzing.set(false);
         }
     }
 
     groupResults() {
-        const results = this.state.rawResults;
+        const results = this.rawResults();
         const groups = new Map();
 
         // Always group by title
@@ -241,7 +239,7 @@ export class AnalysisView extends Component {
         // Convert the map to an array and sort
         const groupedArray = Array.from(groups.values());
         this.sortGroupsBySeverity(groupedArray);
-        this.state.groupedResults = groupedArray;
+        this.groupedResults.set(groupedArray);
     }
 
     sortResultsBySeverity(results) {
@@ -280,12 +278,14 @@ export class AnalysisView extends Component {
     }
 
     toggleIssueDetails(index) {
-        this.state.expandedIssues[index] = !this.state.expandedIssues[index];
+        const expanded = this.expandedIssues();
+        expanded[index] = !expanded[index];
     }
 
     toggleInstanceDetails(groupIndex, instanceIndex) {
         const key = `${groupIndex}-${instanceIndex}`;
-        this.state.expandedInstances[key] = !this.state.expandedInstances[key];
+        const expanded = this.expandedInstances();
+        expanded[key] = !expanded[key];
     }
 
     getRecommendation(issue) {

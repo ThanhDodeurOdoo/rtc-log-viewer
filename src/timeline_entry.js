@@ -1,4 +1,4 @@
-const { Component, xml, proxy, signal, computed, plugin, props, types } = owl;
+const { Component, xml, signal, computed, plugin, props, types } = owl;
 import helpers from "./utils/helpers.js";
 import { ConnectionState, EventList } from "./common/ui_components.js";
 import { ZoomControl } from "./zoom_control.js";
@@ -34,16 +34,16 @@ const ERROR_KEYWORDS = ["error", "failed", "failure", "attempting to recover"];
 export class TimelineEntry extends Component {
     static template = xml`
         <div class="timeline-entry" t-ref="this.rootRef">
-            <div class="timeline-header" t-on-click="() => this.state.expanded = !this.state.expanded">
+            <div class="timeline-header" t-on-click="() => this.expanded.set(!this.expanded())">
                 <h4 t-out="this.timelineTitle()"></h4>
                 <button
-                    t-attf-class="timeline-toggle {{ this.state.expanded ? 'expanded' : 'collapsed' }}"
-                    t-on-click.stop="() => this.state.expanded = !this.state.expanded"
+                    t-attf-class="timeline-toggle {{ this.expanded() ? 'expanded' : 'collapsed' }}"
+                    t-on-click.stop="() => this.expanded.set(!this.expanded())"
                 >
-                    <t t-out="this.state.expanded ? '▼' : '►'" />
+                    <t t-out="this.expanded() ? '▼' : '►'" />
                 </button>
             </div>
-            <div t-if="this.state.expanded" class="timeline-content">
+            <div t-if="this.expanded()" class="timeline-content">
                 <!-- Interactive zoom navigator -->
                 <ZoomControl
                     events="this.allEventsMinimal"
@@ -67,10 +67,10 @@ export class TimelineEntry extends Component {
                                 <span t-if="this.isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
                             </div>
                             <button
-                                t-attf-class="session-toggle {{ this.state.expandedSessions[sessionId] ? 'expanded' : 'collapsed' }}"
+                                t-attf-class="session-toggle {{ this.expandedSessions()[sessionId] ? 'expanded' : 'collapsed' }}"
                                 t-on-click.stop="() => this.toggleSessionDetails(sessionId)"
                             >
-                                <t t-out="this.state.expandedSessions[sessionId] ? '▼' : '►'" />
+                                <t t-out="this.expandedSessions()[sessionId] ? '▼' : '►'" />
                             </button>
                         </div>
 
@@ -113,7 +113,7 @@ export class TimelineEntry extends Component {
                         </div>
 
                         <!-- Session details (collapsible) -->
-                        <div t-if="this.state.expandedSessions[sessionId]" class="session-details">
+                        <div t-if="this.expandedSessions()[sessionId]" class="session-details">
                             <!-- Connection step -->
                             <div t-if="this.getSessionInfo(sessionId).step" class="connection-step">
                                 <span class="property-name">Connection Step:</span>
@@ -132,10 +132,10 @@ export class TimelineEntry extends Component {
                 </div>
                 
                 <!-- Floating tooltip -->
-                <div t-if="this.state.activeTooltip" class="event-tooltip" t-att-style="this.state.tooltipStyle">
-                    <div class="tooltip-time" t-out="this.state.activeTooltip.time"></div>
-                    <div t-if="this.state.activeTooltip.level" t-attf-class="tooltip-level {{ this.state.activeTooltip.level }}" t-out="this.state.activeTooltip.level"></div>
-                    <div class="tooltip-text" t-out="this.state.activeTooltip.text"></div>
+                <div t-if="this.activeTooltip()" class="event-tooltip" t-att-style="this.tooltipStyle()">
+                    <div class="tooltip-time" t-out="this.activeTooltip().time"></div>
+                    <div t-if="this.activeTooltip().level" t-attf-class="tooltip-level {{ this.activeTooltip().level }}" t-out="this.activeTooltip().level"></div>
+                    <div class="tooltip-text" t-out="this.activeTooltip().text"></div>
                 </div>
                 
                 <div class="timeline-times">
@@ -145,18 +145,18 @@ export class TimelineEntry extends Component {
             </div>
             
             <!-- Sticky event popup (shown when clicking on a group) -->
-            <div t-if="this.state.activeEventGroup" class="sticky-event-popup" t-att-style="this.state.eventGroupPopupStyle">
+            <div t-if="this.activeEventGroup()" class="sticky-event-popup" t-att-style="this.eventGroupPopupStyle()">
                 <div class="sticky-popup-header">
-                    <h4>Events (<t t-out="this.state.activeEventGroup.length" />)</h4>
+                    <h4>Events (<t t-out="this.activeEventGroup().length" />)</h4>
                     <button class="popup-close-btn" t-on-click="this.closeEventPopup">×</button>
                 </div>
                 <div class="sticky-popup-content">
                     <div
-                        t-foreach="this.state.activeEventGroup"
+                        t-foreach="this.activeEventGroup()"
                         t-as="event"
                         t-key="event.index"
                         t-attf-class="popup-event"
-                        t-on-click="() => this.highlightEvent(this.state.activeEventSessionId, event.index)"
+                        t-on-click="() => this.highlightEvent(this.activeEventSessionId(), event.index)"
                     >
                         <div t-attf-class="event-indicator {{ event.level || this.LOG_LEVEL_CLASSES.INFO }}"></div>
                         <div class="event-content">
@@ -168,7 +168,7 @@ export class TimelineEntry extends Component {
             </div>
             
             <!-- Overlay for clicking outside popup -->
-            <div t-if="this.state.activeEventGroup" class="popup-overlay" t-on-click="this.closeEventPopup"></div>
+            <div t-if="this.activeEventGroup()" class="popup-overlay" t-on-click="this.closeEventPopup"></div>
         </div>
     `;
 
@@ -181,20 +181,17 @@ export class TimelineEntry extends Component {
     props = props({ timelineKey: types.string });
 
     setup() {
-        this.state = proxy({
-            expanded: false,
-            expandedSessions: {},
-            activeTooltip: null,
-            tooltipStyle: "",
-            // Interactive zoom and popup state
-            zoomLevel: 1, // 1 = no zoom (100% view)
-            zoomStartPercent: 0, // Start position of zoom window (0-100%)
-            activeEventGroup: null, // Currently displayed event group
-            activeEventSessionId: null, // Session ID for the active event group
-            clickedEventElement: null, // Store the actual clicked element
-            eventGroupPopupStyle: "",
-            activeGroupId: null,
-        });
+        this.expanded = signal(false);
+        this.expandedSessions = signal.Object({});
+        this.activeTooltip = signal(null);
+        this.tooltipStyle = signal("");
+        this.zoomLevel = signal(1);
+        this.zoomStartPercent = signal(0);
+        this.activeEventGroup = signal(null);
+        this.activeEventSessionId = signal(null);
+        this.clickedEventElement = signal(null);
+        this.eventGroupPopupStyle = signal("");
+        this.activeGroupId = signal(null);
 
         this.helpers = helpers;
         this.rootRef = signal(null);
@@ -260,12 +257,12 @@ export class TimelineEntry extends Component {
             const fullEndTime = this.endDate();
             const fullRange = fullEndTime.getTime() - fullStartTime.getTime();
 
-            if (this.state.zoomLevel <= 1) {
+            if (this.zoomLevel() <= 1) {
                 return { visibleStartTime: fullStartTime, visibleEndTime: fullEndTime, fullStartTime, fullEndTime };
             }
 
-            const visibleRangeDuration = fullRange / this.state.zoomLevel;
-            const startOffset = (fullRange * this.state.zoomStartPercent) / 100;
+            const visibleRangeDuration = fullRange / this.zoomLevel();
+            const startOffset = (fullRange * this.zoomStartPercent()) / 100;
             const visibleStartTime = new Date(fullStartTime.getTime() + startOffset);
             const visibleEndTime = new Date(visibleStartTime.getTime() + visibleRangeDuration);
 
@@ -313,18 +310,18 @@ export class TimelineEntry extends Component {
     }
 
     handleResize() {
-        if (this.state.activeEventGroup && this.state.clickedEventElement) {
+        if (this.activeEventGroup() && this.clickedEventElement()) {
             this.repositionPopup();
         }
     }
 
     handleZoomChange({ zoomLevel, zoomStartPercent }) {
-        this.state.zoomLevel = zoomLevel;
-        this.state.zoomStartPercent = zoomStartPercent;
+        this.zoomLevel.set(zoomLevel);
+        this.zoomStartPercent.set(zoomStartPercent);
     }
 
     repositionPopup() {
-        const element = this.state.clickedEventElement;
+        const element = this.clickedEventElement();
         if (!element) {
             return;
         }
@@ -367,7 +364,7 @@ export class TimelineEntry extends Component {
             max-height: ${Math.min(popupHeight, viewportHeight - 2 * padding)}px;
         `;
 
-        this.state.eventGroupPopupStyle = popupStyle;
+        this.eventGroupPopupStyle.set(popupStyle);
     }
 
     calculateFullPosition(timestamp) {
@@ -409,7 +406,8 @@ export class TimelineEntry extends Component {
     }
 
     toggleSessionDetails(sessionId) {
-        this.state.expandedSessions[sessionId] = !this.state.expandedSessions[sessionId];
+        const expanded = this.expandedSessions();
+        expanded[sessionId] = !expanded[sessionId];
     }
 
     isSessionSelf(sessionId) {
@@ -712,7 +710,7 @@ export class TimelineEntry extends Component {
 
     getVisibleConnectionStateSegments(sessionId) {
         const segments = this.getConnectionStateSegments(sessionId);
-        if (this.state.zoomLevel <= 1) {
+        if (this.zoomLevel() <= 1) {
             return segments; // No need to adjust if not zoomed
         }
 
@@ -762,32 +760,33 @@ export class TimelineEntry extends Component {
         const groupId = `event-group-${sessionId}-${groupIndex}`;
 
         // If clicking on the same group, close it
-        if (this.state.activeGroupId === groupId) {
+        if (this.activeGroupId() === groupId) {
             this.closeEventPopup();
             return;
         }
 
         // Store the actual DOM element that was clicked for accurate positioning
-        this.state.clickedEventElement = e.currentTarget;
-        this.state.activeEventGroup = group;
-        this.state.activeEventSessionId = sessionId;
-        this.state.activeGroupId = groupId;
+        this.clickedEventElement.set(e.currentTarget);
+        this.activeEventGroup.set(group);
+        this.activeEventSessionId.set(sessionId);
+        this.activeGroupId.set(groupId);
 
         // Position popup
         this.repositionPopup();
     }
 
     closeEventPopup() {
-        this.state.activeEventGroup = null;
-        this.state.activeEventSessionId = null;
-        this.state.activeGroupId = null;
-        this.state.clickedEventElement = null;
+        this.activeEventGroup.set(null);
+        this.activeEventSessionId.set(null);
+        this.activeGroupId.set(null);
+        this.clickedEventElement.set(null);
     }
 
     highlightEvent(sessionId, index) {
         // Make sure session details are expanded
-        if (!this.state.expandedSessions[sessionId]) {
-            this.state.expandedSessions[sessionId] = true;
+        const expanded = this.expandedSessions();
+        if (!expanded[sessionId]) {
+            expanded[sessionId] = true;
         }
 
         // Find and scroll to the event in the list
@@ -819,15 +818,15 @@ export class TimelineEntry extends Component {
     }
 
     showTooltip(event, e) {
-        this.state.activeTooltip = {
+        this.activeTooltip.set({
             time: event.original ? helpers.formatEventTime(event.original) : "",
             level: event.level || "",
             text: event.original ? helpers.formatEventText(event.original) : "",
-        };
+        });
         const updatePosition = (e) => {
             const x = e.clientX + 10;
             const y = e.clientY - 80;
-            this.state.tooltipStyle = `left: ${x}px; top: ${y}px;`;
+            this.tooltipStyle.set(`left: ${x}px; top: ${y}px;`);
         };
         updatePosition(e);
 
@@ -836,7 +835,7 @@ export class TimelineEntry extends Component {
     }
 
     hideTooltip() {
-        this.state.activeTooltip = null;
+        this.activeTooltip.set(null);
         if (this.tooltipMoveHandler) {
             document.removeEventListener("mousemove", this.tooltipMoveHandler);
             this.tooltipMoveHandler = null;

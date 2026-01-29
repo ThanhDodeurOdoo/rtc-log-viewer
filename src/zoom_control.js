@@ -1,4 +1,4 @@
-const { Component, xml, proxy, computed, props, types } = owl;
+const { Component, xml, signal, computed, props, types } = owl;
 import helpers from "./utils/helpers.js";
 
 const ZOOM = {
@@ -39,7 +39,7 @@ export class ZoomControl extends Component {
                     <!-- Zoom selector with handles -->
                     <div
                         class="zoom-selector"
-                        t-attf-style="left: {{ this.state.zoomStartPercent }}%; width: {{ this.zoomWidthPercent() }}%;"
+                        t-attf-style="left: {{ this.zoomStartPercent() }}%; width: {{ this.zoomWidthPercent() }}%;"
                         t-on-mousedown="this.onSelectorMouseDown"
                     >
                         <div
@@ -96,24 +96,22 @@ export class ZoomControl extends Component {
     });
 
     setup() {
-        this.state = proxy({
-            zoomLevel: 1, // Start with no zoom
-            zoomStartPercent: 0, // Start at the beginning of the timeline
-        });
+        this.zoomLevel = signal(1);
+        this.zoomStartPercent = signal(0);
 
-        this.isLowZoom = computed(() => this.state.zoomLevel <= 1);
-        this.zoomWidthPercent = computed(() => Math.min(100, 100 / this.state.zoomLevel));
-        this.cannotSlideLeft = computed(() => this.state.zoomStartPercent <= 0);
+        this.isLowZoom = computed(() => this.zoomLevel() <= 1);
+        this.zoomWidthPercent = computed(() => Math.min(100, 100 / this.zoomLevel()));
+        this.cannotSlideLeft = computed(() => this.zoomStartPercent() <= 0);
         this.cannotSlideRight = computed(() => {
             const maxStart = 100 - this.zoomWidthPercent();
-            return this.state.zoomStartPercent >= maxStart;
+            return this.zoomStartPercent() >= maxStart;
         });
         this.visibleDuration = computed(() => {
             const totalDuration = this.props.totalDuration();
             if (!totalDuration) {
                 return 0;
             }
-            return totalDuration / this.state.zoomLevel;
+            return totalDuration / this.zoomLevel();
         });
 
         // Bind methods
@@ -144,7 +142,7 @@ export class ZoomControl extends Component {
         // Ensure it stays within bounds
         newStart = Math.max(0, Math.min(100 - this.zoomWidthPercent(), newStart));
 
-        this.state.zoomStartPercent = newStart;
+        this.zoomStartPercent.set(newStart);
         this.notifyZoomChange();
     }
 
@@ -161,8 +159,8 @@ export class ZoomControl extends Component {
         this.dragging = {
             type: DRAG_TYPE.MOVE,
             startX: ev.clientX,
-            startLeft: this.state.zoomStartPercent,
-            startWidth: 100 / this.state.zoomLevel,
+            startLeft: this.zoomStartPercent(),
+            startWidth: 100 / this.zoomLevel(),
             barWidth: rect.width,
         };
 
@@ -180,8 +178,8 @@ export class ZoomControl extends Component {
         this.dragging = {
             type: DRAG_TYPE.LEFT,
             startX: ev.clientX,
-            startLeft: this.state.zoomStartPercent,
-            startWidth: 100 / this.state.zoomLevel,
+            startLeft: this.zoomStartPercent(),
+            startWidth: 100 / this.zoomLevel(),
             barWidth: rect.width,
         };
 
@@ -199,8 +197,8 @@ export class ZoomControl extends Component {
         this.dragging = {
             type: DRAG_TYPE.RIGHT,
             startX: ev.clientX,
-            startLeft: this.state.zoomStartPercent,
-            startWidth: 100 / this.state.zoomLevel,
+            startLeft: this.zoomStartPercent(),
+            startWidth: 100 / this.zoomLevel(),
             barWidth: rect.width,
         };
 
@@ -241,8 +239,8 @@ export class ZoomControl extends Component {
                     newStartPercent = 100 - newWidthPercent;
                 }
 
-                this.state.zoomStartPercent = newStartPercent;
-                this.state.zoomLevel = 100 / newWidthPercent;
+                this.zoomStartPercent.set(newStartPercent);
+                this.zoomLevel.set(100 / newWidthPercent);
                 break;
             }
 
@@ -255,18 +253,18 @@ export class ZoomControl extends Component {
                     newWidthPercent = ZOOM.MIN_WIDTH_PERCENT;
                 }
 
-                if (this.state.zoomStartPercent + newWidthPercent > 100) {
-                    newWidthPercent = 100 - this.state.zoomStartPercent;
+                if (this.zoomStartPercent() + newWidthPercent > 100) {
+                    newWidthPercent = 100 - this.zoomStartPercent();
                 }
 
-                this.state.zoomLevel = 100 / newWidthPercent;
+                this.zoomLevel.set(100 / newWidthPercent);
                 break;
             }
 
             case DRAG_TYPE.MOVE: {
                 // Dragging entire selector - move without changing size
                 let newStartPercent = this.dragging.startLeft + deltaPercent;
-                const widthPercent = 100 / this.state.zoomLevel;
+                const widthPercent = 100 / this.zoomLevel();
 
                 // Enforce constraints
                 if (newStartPercent < 0) {
@@ -276,7 +274,7 @@ export class ZoomControl extends Component {
                     newStartPercent = 100 - widthPercent;
                 }
 
-                this.state.zoomStartPercent = newStartPercent;
+                this.zoomStartPercent.set(newStartPercent);
                 break;
             }
         }
@@ -297,51 +295,51 @@ export class ZoomControl extends Component {
 
     notifyZoomChange() {
         this.props.onZoomChange({
-            zoomLevel: this.state.zoomLevel,
-            zoomStartPercent: this.state.zoomStartPercent,
+            zoomLevel: this.zoomLevel(),
+            zoomStartPercent: this.zoomStartPercent(),
         });
     }
 
     resetZoom() {
-        this.state.zoomLevel = 1;
-        this.state.zoomStartPercent = 0;
+        this.zoomLevel.set(1);
+        this.zoomStartPercent.set(0);
         this.notifyZoomChange();
     }
 
     zoomIn() {
         const oldWidth = this.zoomWidthPercent();
-        const newLevel = this.state.zoomLevel * ZOOM.ZOOM_IN_FACTOR;
+        const newLevel = this.zoomLevel() * ZOOM.ZOOM_IN_FACTOR;
         const newWidth = 100 / newLevel;
 
         // Adjust start position to keep center point the same
-        const centerPoint = this.state.zoomStartPercent + oldWidth / 2;
+        const centerPoint = this.zoomStartPercent() + oldWidth / 2;
         const newStart = centerPoint - newWidth / 2;
 
-        this.state.zoomLevel = newLevel;
-        this.state.zoomStartPercent = Math.max(0, Math.min(100 - newWidth, newStart));
+        this.zoomLevel.set(newLevel);
+        this.zoomStartPercent.set(Math.max(0, Math.min(100 - newWidth, newStart)));
 
         this.notifyZoomChange();
     }
 
     zoomOut() {
-        if (this.state.zoomLevel <= 1) {
+        if (this.zoomLevel() <= 1) {
             this.resetZoom();
             return;
         }
 
         const oldWidth = this.zoomWidthPercent();
-        const newLevel = Math.max(1, this.state.zoomLevel / ZOOM.ZOOM_OUT_FACTOR);
+        const newLevel = Math.max(1, this.zoomLevel() / ZOOM.ZOOM_OUT_FACTOR);
         const newWidth = 100 / newLevel;
 
         // Adjust start position to keep center point the same
-        const centerPoint = this.state.zoomStartPercent + oldWidth / 2;
+        const centerPoint = this.zoomStartPercent() + oldWidth / 2;
         const newStart = centerPoint - newWidth / 2;
 
-        this.state.zoomLevel = newLevel;
-        this.state.zoomStartPercent = Math.max(0, Math.min(100 - newWidth, newStart));
+        this.zoomLevel.set(newLevel);
+        this.zoomStartPercent.set(Math.max(0, Math.min(100 - newWidth, newStart)));
 
         // If we're fully zoomed out, reset completely
-        if (this.state.zoomLevel <= 1) {
+        if (this.zoomLevel() <= 1) {
             this.resetZoom();
         } else {
             this.notifyZoomChange();
@@ -358,7 +356,7 @@ export class ZoomControl extends Component {
         }
 
         const slideAmount = this.zoomWidthPercent() * ZOOM.SLIDE_OVERLAP_FACTOR;
-        this.state.zoomStartPercent = Math.max(0, this.state.zoomStartPercent - slideAmount);
+        this.zoomStartPercent.set(Math.max(0, this.zoomStartPercent() - slideAmount));
         this.notifyZoomChange();
     }
 
@@ -373,7 +371,7 @@ export class ZoomControl extends Component {
 
         const slideAmount = this.zoomWidthPercent() * ZOOM.SLIDE_OVERLAP_FACTOR;
         const maxStart = 100 - this.zoomWidthPercent();
-        this.state.zoomStartPercent = Math.min(maxStart, this.state.zoomStartPercent + slideAmount);
+        this.zoomStartPercent.set(Math.min(maxStart, this.zoomStartPercent() + slideAmount));
         this.notifyZoomChange();
     }
 }

@@ -1,4 +1,4 @@
-const { Component, xml, proxy, computed, plugin, props, types } = owl;
+const { Component, xml, signal, computed, plugin, props, types } = owl;
 import helpers from "./utils/helpers.js";
 import { ConnectionState, SessionProperties } from "./common/ui_components.js";
 import { LogPlugin } from "./plugins/log_plugin.js";
@@ -6,17 +6,17 @@ import { LogPlugin } from "./plugins/log_plugin.js";
 export class SnapshotViewer extends Component {
     static template = xml`
         <div class="snapshot-viewer">
-            <div class="snapshot-header" t-on-click="() => this.state.expanded = !this.state.expanded">
+            <div class="snapshot-header" t-on-click="() => this.expanded.set(!this.expanded())">
                 <h4 t-out="this.snapshotTitle()"></h4>
                 <button 
-                    t-attf-class="snapshot-toggle {{ this.state.expanded ? 'expanded' : 'collapsed' }}"
-                    t-on-click.stop="() => this.state.expanded = !this.state.expanded"
+                    t-attf-class="snapshot-toggle {{ this.expanded() ? 'expanded' : 'collapsed' }}"
+                    t-on-click.stop="() => this.expanded.set(!this.expanded())"
                 >
-                <t t-out="this.state.expanded ? '▼' : '►'" />
+                <t t-out="this.expanded() ? '▼' : '►'" />
                 </button>
             </div>
             
-            <div t-if="this.state.expanded" class="snapshot-content">
+            <div t-if="this.expanded()" class="snapshot-content">
                 <!-- Connection overview -->
                 <div class="connection-overview">
                     <div class="connection-summary">
@@ -82,14 +82,14 @@ export class SnapshotViewer extends Component {
                                     <span t-if="session.isSelf" class="self-indicator">(Self)</span>
                                 </h6>
                                 <button 
-                                    t-attf-class="session-toggle {{ this.state.expandedSessions[session.id] ? 'expanded' : 'collapsed' }}"
+                                    t-attf-class="session-toggle {{ this.expandedSessions()[session.id] ? 'expanded' : 'collapsed' }}"
                                     t-on-click.stop="() => this.toggleSession(session.id)"
                                 >
-                                    <t t-out="this.state.expandedSessions[session.id] ? '▼' : '►'" />
+                                    <t t-out="this.expandedSessions()[session.id] ? '▼' : '►'" />
                                 </button>
                             </div>
                             
-                            <div t-if="this.state.expandedSessions[session.id]" class="session-detail">
+                            <div t-if="this.expandedSessions()[session.id]" class="session-detail">
                                 <!-- Connection state -->
                                 <ConnectionState 
                                     state="session.state || 'Unknown'"
@@ -115,10 +115,8 @@ export class SnapshotViewer extends Component {
     props = props({ snapshotKey: types.string });
 
     setup() {
-        this.state = proxy({
-            expanded: false,
-            expandedSessions: {},
-        });
+        this.expanded = signal(false);
+        this.expandedSessions = signal.Object({});
         this.helpers = helpers;
         this.log = plugin(LogPlugin);
         this.snapshotData = computed(() => {
@@ -157,6 +155,7 @@ export class SnapshotViewer extends Component {
     }
 
     toggleSession(sessionId) {
-        this.state.expandedSessions[sessionId] = !this.state.expandedSessions[sessionId];
+        const expanded = this.expandedSessions();
+        expanded[sessionId] = !expanded[sessionId];
     }
 }
