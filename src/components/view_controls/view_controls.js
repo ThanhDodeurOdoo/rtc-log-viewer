@@ -15,7 +15,7 @@ export class ViewControls extends Component {
     setup() {
         this.viewOptions = [
             { id: "analysis", label: "Analysis" },
-            { id: "timing", label: "Timing" },
+            { id: "stats", label: "Stats" },
             { id: "timelines", label: "Timelines" },
             { id: "snapshots", label: "Snapshots" },
             { id: "raw", label: "Raw Data" },
