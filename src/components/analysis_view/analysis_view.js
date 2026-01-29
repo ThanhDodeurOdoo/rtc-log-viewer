@@ -161,13 +161,13 @@ export class AnalysisView extends Component {
                 return "Check if the SFU server is running and accessible. Ensure firewall rules allow WebRTC traffic to the SFU server.";
 
             case ISSUE_CODES.RECOVERY_LOOP:
-                return "Check for network stability issues. If behind a corporate firewall, ensure STUN/TURN servers are properly configured.";
+                return "Check for network stability issues. If behind a corporate firewall, ensure STUN/TURN or SFU servers are properly configured.";
 
             case ISSUE_CODES.SESSION_UNABLE_TO_CONNECT:
-                return "This may indicate the user is behind a restrictive firewall or asymmetric NAT. Consider using TURN servers to facilitate the connection.";
+                return "This may indicate the user is behind a restrictive firewall or asymmetric NAT. Consider using TURN or SFU servers to facilitate the connection.";
 
             case ISSUE_CODES.ICE_CONNECTION_ISSUES:
-                return "Check for network stability and ensure STUN/TURN servers are properly configured. Firewall rules may be blocking ICE connectivity.";
+                return "Check for network stability and ensure STUN/TURN or SFU servers are properly configured. Firewall rules may be blocking ICE connectivity.";
 
             case ISSUE_CODES.SFU_SERVER_ERROR:
                 return "Check the SFU server logs for more details. Ensure the server has enough resources and is properly configured.";
@@ -176,10 +176,10 @@ export class AnalysisView extends Component {
                 return "Check for camera/microphone permission issues. Ensure the devices are working properly and not being used by other applications.";
 
             case ISSUE_CODES.FAILED_CONNECTION:
-                return "The connection attempt failed. Check network conditions, firewall settings, and ensure STUN/TURN servers are properly configured.";
+                return "The connection attempt failed. Check network conditions, firewall settings, and ensure STUN/TURN or SFU servers are properly configured.";
 
             case ISSUE_CODES.NO_TURN_SERVER:
-                return "Consider configuring TURN servers to improve connection reliability in restrictive network environments.";
+                return "Consider configuring TURN or SFU servers to improve connection reliability in restrictive network environments.";
 
             case ISSUE_CODES.USING_TURN_RELAY:
                 return "The connection is using a TURN relay, which may result in higher latency. This is normal in restrictive network environments.";
