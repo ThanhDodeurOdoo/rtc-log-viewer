@@ -8,5 +8,9 @@ Log viewer for Odoo RTC feature
 
 [See RTC knowledge article.](https://www.odoo.com/knowledge/article/28830)
 
-#Roadmap
-
+# Roadmap
+- Add peer stats in snapshots (candidate types, DTLS/ICE states, data channel state, packets) to diagnose TURN usage and transport health.
+- Add SFU transport/producer stats (bitrate, packet loss, RTT) to enable quality scoring and regression detection.
+- Log per-track upload/download intent and active state to distinguish muted, stopped, and consumption-disabled media.
+- Record explicit device and permission failures (mic/camera/screen) to improve media troubleshooting.
+- Add periodic stats sampling with timestamps for trend analysis across a call.
