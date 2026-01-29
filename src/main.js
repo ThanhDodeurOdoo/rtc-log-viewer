@@ -1,19 +1,18 @@
-const { Component, xml, useState } = owl;
+const { Component, xml, signal, plugin } = owl;
 import { TimelineViewer } from "./timeline_viewer.js";
 import { SnapshotViewer } from "./snapshot_viewer.js";
 import { AnalysisView } from "./analysis_view.js";
-import helpers from "./utils/helpers.js";
 import { NoData } from "./common/ui_components.js";
-import { Log } from "./models/log.js";
+import { LogPlugin } from "./plugins/log_plugin.js";
 
 export class Main extends Component {
     static template = xml`
         <div id="main" class="rtc-log-viewer">
-            <div t-if="!Log.isLoaded"
-                t-attf-class="file-upload-container {{ state.isDragOver ? 'drag-over' : '' }}"
-                t-on-dragover.prevent.stop="onDragOver"
-                t-on-dragleave.prevent.stop="onDragLeave"
-                t-on-drop.prevent.stop="onFileDrop"
+            <div t-if="!this.log.isLoaded()"
+                t-attf-class="file-upload-container {{ this.isDragOver() ? 'drag-over' : '' }}"
+                t-on-dragover.prevent.stop="this.onDragOver"
+                t-on-dragleave.prevent.stop="this.onDragLeave"
+                t-on-drop.prevent.stop="this.onFileDrop"
             >
                 <h2>RTC Log Viewer</h2>
                 <p>Upload a JSON log file (<a target="_blank" href="https://www.odoo.com/knowledge/article/28833">from Odoo Discuss RTC</a>)</p>
@@ -26,30 +25,30 @@ export class Main extends Component {
                     </div>
                     
                     <div class="file-input">
-                        <input type="file" accept=".json" t-on-change="onFileChange"/>
-                        <button t-on-click="triggerFileInput">Choose File</button>
-                        <span t-if="state.fileName" class="file-name" t-esc="state.fileName"></span>
+                        <input type="file" accept=".json" t-on-change="this.onFileChange"/>
+                        <button t-on-click="this.triggerFileInput">Choose File</button>
+                        <span t-if="this.fileName()" class="file-name" t-out="this.fileName()"></span>
                         <span t-else="" class="file-hint">No file chosen</span>
                     </div>
                 </div>
             </div>
             
-            <div t-if="Log.isLoaded" class="log-content">
+            <div t-if="this.log.isLoaded()" class="log-content">
                 <div class="info-panel">
                     <div class="system-info">
                         <h3>System Information</h3>
                         <table>
-                            <tr t-if="Log.odooInfo and Log.odooInfo.server_version">
+                            <tr t-if="this.log.odooInfo() and this.log.odooInfo().server_version">
                                 <td>Server Version:</td>
-                                <td t-esc="Log.odooInfo.server_version"></td>
+                                <td t-out="this.log.odooInfo().server_version"></td>
                             </tr>
-                            <tr t-if="Log.odooInfo and Log.odooInfo.db">
+                            <tr t-if="this.log.odooInfo() and this.log.odooInfo().db">
                                 <td>Database:</td>
-                                <td t-esc="Log.odooInfo.db"></td>
+                                <td t-out="this.log.odooInfo().db"></td>
                             </tr>
-                            <tr t-if="Log.odooInfo and Log.odooInfo.isEnterprise !== undefined">
+                            <tr t-if="this.log.odooInfo() and this.log.odooInfo().isEnterprise !== undefined">
                                 <td>Enterprise:</td>
-                                <td t-esc="Log.odooInfo.isEnterprise ? 'Yes' : 'No'"></td>
+                                <td t-out="this.log.odooInfo().isEnterprise ? 'Yes' : 'No'"></td>
                             </tr>
                         </table>
                     </div>
@@ -58,31 +57,31 @@ export class Main extends Component {
                         <h3>View Options</h3>
                         <div class="view-buttons">
                             <button 
-                                t-foreach="viewOptions" 
+                                t-foreach="this.viewOptions" 
                                 t-as="option" 
                                 t-key="option.id"
-                                t-attf-class="view-btn {{ state.activeView === option.id ? 'active' : '' }}"
+                                t-attf-class="view-btn {{ this.activeView() === option.id ? 'active' : '' }}"
                                 t-on-click="() => this.setActiveView(option.id)"
-                                t-esc="option.label"
+                                t-out="option.label"
                             />
                         </div>
                         
                         <!-- Timeline Filters -->
-                        <div t-if="Log.timelineKeys.length > 0" class="filter-section">
-                            <div class="filter-header" t-on-click="toggleTimelineFilters">
+                        <div t-if="this.log.timelineKeys().length > 0" class="filter-section">
+                            <div class="filter-header" t-on-click="this.toggleTimelineFilters">
                                 <h4>Timelines</h4>
                                 <span class="filter-count">
-                                    (<t t-esc="Log.selectedTimelines.size" /> / <t t-esc="Log.timelineKeys.length" />)
+                                    (<t t-out="this.log.selectedTimelines().size" /> / <t t-out="this.log.timelineKeys().length" />)
                                 </span>
                                 <button 
-                                    t-attf-class="filter-toggle {{ state.showTimelineFilters ? 'expanded' : 'collapsed' }}"
-                                    t-on-click.stop="toggleTimelineFilters"
+                                    t-attf-class="filter-toggle {{ this.showTimelineFilters() ? 'expanded' : 'collapsed' }}"
+                                    t-on-click.stop="this.toggleTimelineFilters"
                                 >
-                                    <t t-esc="state.showTimelineFilters ? '▼' : '►'" />
+                                    <t t-out="this.showTimelineFilters() ? '▼' : '►'" />
                                 </button>
                             </div>
                             
-                            <div t-if="state.showTimelineFilters" class="filter-content">
+                            <div t-if="this.showTimelineFilters()" class="filter-content">
                                 <div class="filter-actions">
                                     <button class="filter-action-btn" t-on-click="() => this.toggleAllTimelines(true)">Select All</button>
                                     <button class="filter-action-btn" t-on-click="() => this.toggleAllTimelines(false)">Deselect All</button>
@@ -90,19 +89,18 @@ export class Main extends Component {
                                 
                                 <div class="filter-items">
                                     <div 
-                                        t-foreach="Log.timelineKeys" 
+                                        t-foreach="this.log.timelineKeys()" 
                                         t-as="timelineKey" 
                                         t-key="timelineKey"
                                         class="filter-item"
-                                        t-att-title="Log.formatTimelineLabel(timelineKey)"
+                                        t-att-title="this.log.formatTimelineLabel(timelineKey)"
                                     >
                                         <label class="checkbox-label">
                                             <input 
                                                 type="checkbox" 
-                                                t-att-checked="Log.selectedTimelines.has(timelineKey)"
-                                                t-on-change="() => this.toggleTimeline(timelineKey)"
+                                                t-model="this.timelineModel(timelineKey)"
                                             />
-                                            <span class="timeline-label" t-esc="Log.formatTimelineLabel(timelineKey)"></span>
+                                            <span class="timeline-label" t-out="this.log.formatTimelineLabel(timelineKey)"></span>
                                         </label>
                                     </div>
                                 </div>
@@ -110,21 +108,21 @@ export class Main extends Component {
                         </div>
                         
                         <!-- Snapshot Filters -->
-                        <div t-if="Log.snapshotKeys.length > 0" class="filter-section">
-                            <div class="filter-header" t-on-click="toggleSnapshotFilters">
+                        <div t-if="this.log.snapshotKeys().length > 0" class="filter-section">
+                            <div class="filter-header" t-on-click="this.toggleSnapshotFilters">
                                 <h4>Snapshots</h4>
                                 <span class="filter-count">
-                                    (<t t-esc="Log.selectedSnapshots.size" /> / <t t-esc="Log.snapshotKeys.length" />)
+                                    (<t t-out="this.log.selectedSnapshots().size" /> / <t t-out="this.log.snapshotKeys().length" />)
                                 </span>
                                 <button 
-                                    t-attf-class="filter-toggle {{ state.showSnapshotFilters ? 'expanded' : 'collapsed' }}"
-                                    t-on-click.stop="toggleSnapshotFilters"
+                                    t-attf-class="filter-toggle {{ this.showSnapshotFilters() ? 'expanded' : 'collapsed' }}"
+                                    t-on-click.stop="this.toggleSnapshotFilters"
                                 >
-                                    <t t-esc="state.showSnapshotFilters ? '▼' : '►'" />
+                                    <t t-out="this.showSnapshotFilters() ? '▼' : '►'" />
                                 </button>
                             </div>
                             
-                            <div t-if="state.showSnapshotFilters" class="filter-content">
+                            <div t-if="this.showSnapshotFilters()" class="filter-content">
                                 <div class="filter-actions">
                                     <button class="filter-action-btn" t-on-click="() => this.toggleAllSnapshots(true)">Select All</button>
                                     <button class="filter-action-btn" t-on-click="() => this.toggleAllSnapshots(false)">Deselect All</button>
@@ -132,7 +130,7 @@ export class Main extends Component {
                                 
                                 <div class="filter-items">
                                     <div 
-                                        t-foreach="Log.snapshotKeys" 
+                                        t-foreach="this.log.snapshotKeys()" 
                                         t-as="snapshotKey" 
                                         t-key="snapshotKey"
                                         class="filter-item"
@@ -140,10 +138,9 @@ export class Main extends Component {
                                         <label class="checkbox-label">
                                             <input 
                                                 type="checkbox" 
-                                                t-att-checked="Log.selectedSnapshots.has(snapshotKey)"
-                                                t-on-change="() => this.toggleSnapshot(snapshotKey)"
+                                                t-model="this.snapshotModel(snapshotKey)"
                                             />
-                                            <span class="snapshot-label" t-esc="Log.formatSnapshotLabel(snapshotKey)"></span>
+                                            <span class="snapshot-label" t-out="this.log.formatSnapshotLabel(snapshotKey)"></span>
                                         </label>
                                     </div>
                                 </div>
@@ -155,51 +152,47 @@ export class Main extends Component {
                 <div class="main-view">
                     <!-- Analysis View -->
                     <AnalysisView 
-                        t-if="state.activeView === 'analysis'" 
-                        logs="Log.filteredLogs"
+                        t-if="this.activeView() === 'analysis'"
                     />
                     
                     <!-- Timelines View -->
                     <TimelineViewer 
-                        t-if="state.activeView === 'timelines'" 
-                        logs="Log.filteredLogs"
-                        lastRelevantTimestamp="Log.lastRelevantTimestamp"
+                        t-if="this.activeView() === 'timelines'"
                     />
                     
                     <!-- Snapshots View -->
-                    <div t-if="state.activeView === 'snapshots'" class="snapshots-container">
+                    <div t-if="this.activeView() === 'snapshots'" class="snapshots-container">
                         <h3>Connection Snapshots</h3>
                         <p class="view-description">Each snapshot shows the complete state of all sessions at a specific moment.</p>
                         
                         <NoData 
-                            t-if="!Log.filteredSnapshotKeys.length" 
+                            t-if="!this.log.filteredSnapshotKeys().length" 
                             message="'No snapshot data available in this log file'"
                         />
                         
                         <div t-else="" class="snapshot-list">
                             <div 
-                                t-foreach="Log.filteredSnapshotKeys" 
+                                t-foreach="this.log.filteredSnapshotKeys()" 
                                 t-as="snapshotKey" 
                                 t-key="snapshotKey"
                                 class="snapshot-entry"
                             >
                                 <SnapshotViewer 
                                     snapshotKey="snapshotKey"
-                                    snapshotData="Log.filteredSnapshots[snapshotKey]"
                                 />
                             </div>
                         </div>
                     </div>
 
                     <!-- Raw Data View -->
-                    <div t-if="state.activeView === 'raw'" class="raw-data-container">
+                    <div t-if="this.activeView() === 'raw'" class="raw-data-container">
                         <h3>Raw Log Data</h3>
                         <div class="raw-data">
-                            <pre t-esc="window.JSON.stringify(Log.rawData, null, 2)"></pre>
+                            <pre t-out="window.JSON.stringify(this.log.rawData(), null, 2)"></pre>
                         </div>
                     </div>
+                    </div>
                 </div>
-            </div>
 
             <footer class="app-footer">
                 <p>Powered by <a href="https://github.com/odoo/owl" target="_blank">odoo/OWL</a></p>
@@ -216,14 +209,11 @@ export class Main extends Component {
     };
 
     setup() {
-        // UI-only state (data state is in Log singleton)
-        this.state = useState({
-            fileName: "",
-            activeView: "analysis",
-            isDragOver: false,
-            showTimelineFilters: false,
-            showSnapshotFilters: false,
-        });
+        this.fileName = signal("");
+        this.activeView = signal("analysis");
+        this.isDragOver = signal(false);
+        this.showTimelineFilters = signal(false);
+        this.showSnapshotFilters = signal(false);
 
         this.viewOptions = [
             { id: "analysis", label: "Analysis" },
@@ -231,54 +221,31 @@ export class Main extends Component {
             { id: "snapshots", label: "Snapshots" },
             { id: "raw", label: "Raw Data" },
         ];
-        this.helpers = helpers;
-
-        // Expose Log to template
-        this.Log = Log;
-
-        // Subscribe to Log changes to trigger re-renders
-        this._unsubscribe = Log.onChange(() => {
-            // Force OWL to re-render by toggling a dummy state
-            this.render();
-        });
-    }
-
-    willUnmount() {
-        if (this._unsubscribe) {
-            this._unsubscribe();
-        }
-    }
-
-    toggleTimeline(timelineKey) {
-        Log.toggleTimeline(timelineKey);
-    }
-
-    toggleSnapshot(snapshotKey) {
-        Log.toggleSnapshot(snapshotKey);
+        this.log = plugin(LogPlugin);
     }
 
     toggleAllTimelines(select = true) {
         if (select) {
-            Log.selectAllTimelines();
+            this.log.selectAllTimelines();
         } else {
-            Log.deselectAllTimelines();
+            this.log.deselectAllTimelines();
         }
     }
 
     toggleAllSnapshots(select = true) {
         if (select) {
-            Log.selectAllSnapshots();
+            this.log.selectAllSnapshots();
         } else {
-            Log.deselectAllSnapshots();
+            this.log.deselectAllSnapshots();
         }
     }
 
     toggleTimelineFilters() {
-        this.state.showTimelineFilters = !this.state.showTimelineFilters;
+        this.showTimelineFilters.set(!this.showTimelineFilters());
     }
 
     toggleSnapshotFilters() {
-        this.state.showSnapshotFilters = !this.state.showSnapshotFilters;
+        this.showSnapshotFilters.set(!this.showSnapshotFilters());
     }
 
     triggerFileInput() {
@@ -291,15 +258,15 @@ export class Main extends Component {
     }
 
     onDragOver(event) {
-        this.state.isDragOver = true;
+        this.isDragOver.set(true);
     }
 
     onDragLeave(event) {
-        this.state.isDragOver = false;
+        this.isDragOver.set(false);
     }
 
     onFileDrop(event) {
-        this.state.isDragOver = false;
+        this.isDragOver.set(false);
 
         const files = event.dataTransfer.files;
         if (files.length === 0) {
@@ -321,13 +288,13 @@ export class Main extends Component {
             return;
         }
 
-        this.state.fileName = file.name;
+        this.fileName.set(file.name);
 
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const logs = JSON.parse(e.target.result);
-                Log.load(logs);
+                this.log.load(logs);
             } catch {
                 alert("Error parsing the log file. Please ensure it is a valid JSON file.");
             }
@@ -336,6 +303,32 @@ export class Main extends Component {
     }
 
     setActiveView(viewId) {
-        this.state.activeView = viewId;
+        this.activeView.set(viewId);
+    }
+
+    timelineModel(timelineKey) {
+        const model = () => this.log.selectedTimelines().has(timelineKey);
+        model.set = (value) => {
+            const selected = this.log.selectedTimelines();
+            if (value) {
+                selected.add(timelineKey);
+            } else {
+                selected.delete(timelineKey);
+            }
+        };
+        return model;
+    }
+
+    snapshotModel(snapshotKey) {
+        const model = () => this.log.selectedSnapshots().has(snapshotKey);
+        model.set = (value) => {
+            const selected = this.log.selectedSnapshots();
+            if (value) {
+                selected.add(snapshotKey);
+            } else {
+                selected.delete(snapshotKey);
+            }
+        };
+        return model;
     }
 }

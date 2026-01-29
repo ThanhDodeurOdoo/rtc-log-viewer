@@ -1,7 +1,8 @@
-const { Component, xml, useState, useRef } = owl;
+const { Component, xml, proxy, signal, computed, plugin, props, types } = owl;
 import helpers from "./utils/helpers.js";
 import { ConnectionState, EventList } from "./common/ui_components.js";
 import { ZoomControl } from "./zoom_control.js";
+import { LogPlugin } from "./plugins/log_plugin.js";
 
 const CONSTANTS = {
     // Thresholds for event clustering
@@ -32,44 +33,44 @@ const ERROR_KEYWORDS = ["error", "failed", "failure", "attempting to recover"];
 
 export class TimelineEntry extends Component {
     static template = xml`
-        <div class="timeline-entry" ref="root">
+        <div class="timeline-entry" t-ref="this.rootRef">
             <div class="timeline-header" t-on-click="() => this.state.expanded = !this.state.expanded">
-                <h4 t-esc="getTimelineTitle()"></h4>
+                <h4 t-out="this.timelineTitle()"></h4>
                 <button
-                    t-attf-class="timeline-toggle {{ state.expanded ? 'expanded' : 'collapsed' }}"
+                    t-attf-class="timeline-toggle {{ this.state.expanded ? 'expanded' : 'collapsed' }}"
                     t-on-click.stop="() => this.state.expanded = !this.state.expanded"
                 >
-                    <t t-esc="state.expanded ? '▼' : '►'" />
+                    <t t-out="this.state.expanded ? '▼' : '►'" />
                 </button>
             </div>
-            <div t-if="state.expanded" class="timeline-content">
+            <div t-if="this.state.expanded" class="timeline-content">
                 <!-- Interactive zoom navigator -->
                 <ZoomControl
-                    events="getAllEventsMinimal()"
-                    onZoomChange="handleZoomChange"
-                    totalDuration="getTimelineTotalDuration()"
+                    events="this.allEventsMinimal"
+                    onZoomChange="this.handleZoomChange"
+                    totalDuration="this.timelineTotalDuration"
                 />
 
                 <!-- All sessions displayed as rows -->
                 <div class="timeline-sessions">
                     <div
-                        t-foreach="sortedSessionIds"
+                        t-foreach="this.sortedSessionIds()"
                         t-as="sessionId"
                         t-key="sessionId"
-                        t-attf-class="session-row {{ isSessionSelf(sessionId) ? 'self-session' : '' }}"
+                        t-attf-class="session-row {{ this.isSessionSelf(sessionId) ? 'self-session' : '' }}"
                         t-att-data-session-id="sessionId"
                     >
                         <div class="session-row-header" t-on-click="() => this.toggleSessionDetails(sessionId)">
                             <div class="session-title">
-                                <div t-attf-class="state-indicator {{ helpers.getConnectionStateClass(getSessionLastState(sessionId)) }}"></div>
-                                Session <t t-esc="sessionId"/>
-                                <span t-if="isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
+                                <div t-attf-class="state-indicator {{ this.helpers.getConnectionStateClass(this.getSessionLastState(sessionId)) }}"></div>
+                                Session <t t-out="sessionId"/>
+                                <span t-if="this.isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
                             </div>
                             <button
-                                t-attf-class="session-toggle {{ state.expandedSessions[sessionId] ? 'expanded' : 'collapsed' }}"
+                                t-attf-class="session-toggle {{ this.state.expandedSessions[sessionId] ? 'expanded' : 'collapsed' }}"
                                 t-on-click.stop="() => this.toggleSessionDetails(sessionId)"
                             >
-                                <t t-esc="state.expandedSessions[sessionId] ? '▼' : '►'" />
+                                <t t-out="this.state.expandedSessions[sessionId] ? '▼' : '►'" />
                             </button>
                         </div>
 
@@ -77,34 +78,34 @@ export class TimelineEntry extends Component {
                         <div class="visual-timeline-container">
                             <div class="visual-timeline">
                                 <!-- Connection state segments -->
-                                <t t-foreach="getVisibleConnectionStateSegments(sessionId)" t-as="segment" t-key="segment_index">
+                                <t t-foreach="this.getVisibleConnectionStateSegments(sessionId)" t-as="segment" t-key="segment_index">
                                     <div
-                                        t-attf-class="timeline-segment {{ helpers.getConnectionStateClass(segment.state) }} {{ segment.state === undefined ? 'undefined-state' : '' }}"
+                                        t-attf-class="timeline-segment {{ this.helpers.getConnectionStateClass(segment.state) }} {{ segment.state === undefined ? 'undefined-state' : '' }}"
                                         t-attf-style="left: {{ segment.startPos }}%; width: {{ segment.width }}%;"
                                         t-att-title="segment.state || 'Not connected to SFU'"
                                     ></div>
                                 </t>
                                 
                                 <!-- Event groups (clustered events) -->
-                                <t t-foreach="getEventGroups(sessionId)" t-as="group" t-key="group_index">
+                                <t t-foreach="this.getEventGroups(sessionId)" t-as="group" t-key="group_index">
                                     <div
                                         class="event-group"
                                         t-att-id="'event-group-' + sessionId + '-' + group_index"
-                                        t-attf-style="left: {{ getGroupPosition(group) }}%;"
+                                        t-attf-style="left: {{ this.getGroupPosition(group) }}%;"
                                         t-on-click.stop="(e) => this.toggleEventGroupPopup(group, e, sessionId, group_index)"
                                     >
                                         <!-- Single event or group indicator -->
                                         <div
                                             t-if="group.length === 1"
-                                            t-attf-class="timeline-event {{ group[0].level || LOG_LEVEL_CLASSES.INFO }}"
+                                            t-attf-class="timeline-event {{ group[0].level || this.LOG_LEVEL_CLASSES.INFO }}"
                                             t-on-click.stop="(e) => { this.highlightEvent(sessionId, group[0].index); }"
                                             t-on-mouseenter="(e) => this.showTooltip(group[0], e)"
-                                            t-on-mouseleave="hideTooltip"
+                                            t-on-mouseleave="this.hideTooltip"
                                         ></div>
                                         <div
                                             t-else=""
                                             class="event-cluster"
-                                            t-esc="group.length"
+                                            t-out="group.length"
                                         ></div>
                                     </div>
                                 </t>
@@ -112,17 +113,17 @@ export class TimelineEntry extends Component {
                         </div>
 
                         <!-- Session details (collapsible) -->
-                        <div t-if="state.expandedSessions[sessionId]" class="session-details">
+                        <div t-if="this.state.expandedSessions[sessionId]" class="session-details">
                             <!-- Connection step -->
-                            <div t-if="getSessionInfo(sessionId).step" class="connection-step">
+                            <div t-if="this.getSessionInfo(sessionId).step" class="connection-step">
                                 <span class="property-name">Connection Step:</span>
-                                <span class="step-value" t-esc="getSessionInfo(sessionId).step"></span>
+                                <span class="step-value" t-out="this.getSessionInfo(sessionId).step"></span>
                             </div>
                             <!-- Events log -->
                             <div class="events-log">
                                 <h5>Events</h5>
                                 <EventList
-                                    events="getSessionEvents(sessionId)"
+                                    events="this.getSessionEvents(sessionId)"
                                     noDataMessage="'No events recorded for this session'"
                                 />
                             </div>
@@ -131,43 +132,43 @@ export class TimelineEntry extends Component {
                 </div>
                 
                 <!-- Floating tooltip -->
-                <div t-if="state.activeTooltip" class="event-tooltip" t-att-style="state.tooltipStyle">
-                    <div class="tooltip-time" t-esc="state.activeTooltip.time"></div>
-                    <div t-if="state.activeTooltip.level" t-attf-class="tooltip-level {{ state.activeTooltip.level }}" t-esc="state.activeTooltip.level"></div>
-                    <div class="tooltip-text" t-esc="state.activeTooltip.text"></div>
+                <div t-if="this.state.activeTooltip" class="event-tooltip" t-att-style="this.state.tooltipStyle">
+                    <div class="tooltip-time" t-out="this.state.activeTooltip.time"></div>
+                    <div t-if="this.state.activeTooltip.level" t-attf-class="tooltip-level {{ this.state.activeTooltip.level }}" t-out="this.state.activeTooltip.level"></div>
+                    <div class="tooltip-text" t-out="this.state.activeTooltip.text"></div>
                 </div>
                 
                 <div class="timeline-times">
-                    <div class="timeline-start-time" t-esc="formatTimelineTime(getVisibleTimeRange().visibleStartTime)"></div>
-                    <div class="timeline-end-time" t-esc="formatTimelineTime(getVisibleTimeRange().visibleEndTime)"></div>
+                    <div class="timeline-start-time" t-out="this.formatTimelineTime(this.visibleTimeRange().visibleStartTime)"></div>
+                    <div class="timeline-end-time" t-out="this.formatTimelineTime(this.visibleTimeRange().visibleEndTime)"></div>
                 </div>
             </div>
             
             <!-- Sticky event popup (shown when clicking on a group) -->
-            <div t-if="state.activeEventGroup" class="sticky-event-popup" t-att-style="state.eventGroupPopupStyle">
+            <div t-if="this.state.activeEventGroup" class="sticky-event-popup" t-att-style="this.state.eventGroupPopupStyle">
                 <div class="sticky-popup-header">
-                    <h4>Events (<t t-esc="state.activeEventGroup.length" />)</h4>
-                    <button class="popup-close-btn" t-on-click="closeEventPopup">×</button>
+                    <h4>Events (<t t-out="this.state.activeEventGroup.length" />)</h4>
+                    <button class="popup-close-btn" t-on-click="this.closeEventPopup">×</button>
                 </div>
                 <div class="sticky-popup-content">
                     <div
-                        t-foreach="state.activeEventGroup"
+                        t-foreach="this.state.activeEventGroup"
                         t-as="event"
                         t-key="event.index"
                         t-attf-class="popup-event"
-                        t-on-click="() => this.highlightEvent(state.activeEventSessionId, event.index)"
+                        t-on-click="() => this.highlightEvent(this.state.activeEventSessionId, event.index)"
                     >
-                        <div t-attf-class="event-indicator {{ event.level || LOG_LEVEL_CLASSES.INFO }}"></div>
+                        <div t-attf-class="event-indicator {{ event.level || this.LOG_LEVEL_CLASSES.INFO }}"></div>
                         <div class="event-content">
-                            <span class="event-time" t-esc="helpers.formatEventTime(event.original)"></span>
-                            <span class="event-text" t-esc="helpers.formatEventText(event.original)"></span>
+                            <span class="event-time" t-out="this.helpers.formatEventTime(event.original)"></span>
+                            <span class="event-text" t-out="this.helpers.formatEventText(event.original)"></span>
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Overlay for clicking outside popup -->
-            <div t-if="state.activeEventGroup" class="popup-overlay" t-on-click="closeEventPopup"></div>
+            <div t-if="this.state.activeEventGroup" class="popup-overlay" t-on-click="this.closeEventPopup"></div>
         </div>
     `;
 
@@ -177,8 +178,10 @@ export class TimelineEntry extends Component {
         ZoomControl,
     };
 
+    props = props({ timelineKey: types.string });
+
     setup() {
-        this.state = useState({
+        this.state = proxy({
             expanded: false,
             expandedSessions: {},
             activeTooltip: null,
@@ -190,12 +193,112 @@ export class TimelineEntry extends Component {
             activeEventSessionId: null, // Session ID for the active event group
             clickedEventElement: null, // Store the actual clicked element
             eventGroupPopupStyle: "",
+            activeGroupId: null,
         });
 
         this.helpers = helpers;
-        this.rootRef = useRef("root");
+        this.rootRef = signal(null);
         this.LOG_LEVEL_CLASSES = LOG_LEVEL_CLASSES;
-        this.CONSTANTS = CONSTANTS;
+        this.log = plugin(LogPlugin);
+
+        this.timelineData = computed(() => {
+            const timelines = this.log.filteredTimelines();
+            return timelines[this.props.timelineKey] || {};
+        });
+        this.endDate = computed(() => {
+            const endStamp = this.timelineData().end || this.log.lastRelevantTimestamp();
+            if (!endStamp) {
+                return new Date();
+            }
+            return new Date(endStamp);
+        });
+        this.sessionIds = computed(() => {
+            const timelineData = this.timelineData();
+            if (!timelineData.entriesBySessionId) {
+                return [];
+            }
+            return Object.keys(timelineData.entriesBySessionId).filter(
+                (key) => key !== "hasTurn" && !isNaN(parseInt(key)),
+            );
+        });
+        this.sortedSessionIds = computed(() => {
+            const ids = this.sessionIds().slice();
+            return ids.sort((a, b) => {
+                const aIsSelf = this.isSessionSelf(a);
+                const bIsSelf = this.isSessionSelf(b);
+
+                if (aIsSelf && !bIsSelf) {
+                    return -1;
+                }
+                if (!aIsSelf && bIsSelf) {
+                    return 1;
+                }
+                return parseInt(a) - parseInt(b);
+            });
+        });
+        this.timelineTitle = computed(() => {
+            try {
+                const date = new Date(this.props.timelineKey);
+                const formattedDate = date.toISOString();
+
+                const channelId = this.timelineData().channelId;
+                const selfSessionId = this.timelineData().selfSessionId;
+
+                return `Timeline: Channel ${channelId} - Session ${selfSessionId} - ${formattedDate}`;
+            } catch {
+                return `Timeline: ${this.props.timelineKey}`;
+            }
+        });
+        this.visibleTimeRange = computed(() => {
+            const timelineData = this.timelineData();
+            if (!timelineData.start) {
+                const now = new Date();
+                return { visibleStartTime: now, visibleEndTime: now, fullStartTime: now, fullEndTime: now };
+            }
+
+            const fullStartTime = new Date(timelineData.start);
+            const fullEndTime = this.endDate();
+            const fullRange = fullEndTime.getTime() - fullStartTime.getTime();
+
+            if (this.state.zoomLevel <= 1) {
+                return { visibleStartTime: fullStartTime, visibleEndTime: fullEndTime, fullStartTime, fullEndTime };
+            }
+
+            const visibleRangeDuration = fullRange / this.state.zoomLevel;
+            const startOffset = (fullRange * this.state.zoomStartPercent) / 100;
+            const visibleStartTime = new Date(fullStartTime.getTime() + startOffset);
+            const visibleEndTime = new Date(visibleStartTime.getTime() + visibleRangeDuration);
+
+            return { visibleStartTime, visibleEndTime, fullStartTime, fullEndTime };
+        });
+        this.allEventsMinimal = computed(() => {
+            const allEvents = [];
+            const sessionIds = this.sessionIds();
+
+            let eventId = 0;
+            for (const sessionId of sessionIds) {
+                const events = this.getProcessedEvents(sessionId, false);
+                for (const event of events) {
+                    allEvents.push({
+                        ...event,
+                        id: eventId++,
+                        sessionId,
+                        fullPosition: this.calculateFullPosition(event.timestamp),
+                    });
+                }
+            }
+
+            return allEvents;
+        });
+        this.timelineTotalDuration = computed(() => {
+            const timelineData = this.timelineData();
+            if (!timelineData.start) {
+                return 0;
+            }
+            const start = new Date(timelineData.start);
+            const end = this.endDate();
+            return end.getTime() - start.getTime();
+        });
 
         this.handleZoomChange = this.handleZoomChange.bind(this);
         this.handleResize = this.handleResize.bind(this);
@@ -267,73 +370,18 @@ export class TimelineEntry extends Component {
         this.state.eventGroupPopupStyle = popupStyle;
     }
 
-    get endDate() {
-        const endStamp = this.props.timelineData.end || this.props.lastRelevantTimestamp;
-        if (!endStamp) {
-            return new Date();
-        }
-        return new Date(endStamp);
-    }
-
-    get sessionIds() {
-        const timelineData = this.props.timelineData;
-        if (!timelineData || !timelineData.entriesBySessionId) {
-            return [];
-        }
-
-        return Object.keys(timelineData.entriesBySessionId).filter(
-            (key) => key !== "hasTurn" && !isNaN(parseInt(key)),
-        );
-    }
-
-    get sortedSessionIds() {
-        // Sort sessions with self-session at the top
-        return this.sessionIds.sort((a, b) => {
-            const aIsSelf = this.isSessionSelf(a);
-            const bIsSelf = this.isSessionSelf(b);
-
-            if (aIsSelf && !bIsSelf) {
-                return -1;
-            }
-            if (!aIsSelf && bIsSelf) {
-                return 1;
-            }
-            return parseInt(a) - parseInt(b);
-        });
-    }
-
-    getAllEventsMinimal() {
-        const allEvents = [];
-        const sessionIds = this.sessionIds;
-
-        let eventId = 0;
-        for (const sessionId of sessionIds) {
-            const events = this.getProcessedEvents(sessionId, false); // Get all events without visibility filtering
-            for (const event of events) {
-                allEvents.push({
-                    ...event,
-                    id: eventId++, // Add unique identifier
-                    sessionId,
-                    fullPosition: this.calculateFullPosition(event.timestamp), // Calculate position in full timeline
-                });
-            }
-        }
-
-        return allEvents;
-    }
-
     calculateFullPosition(timestamp) {
         if (!timestamp) {
             return 0;
         }
 
-        const timelineData = this.props.timelineData;
-        if (!timelineData || !timelineData.start) {
+        const timelineData = this.timelineData();
+        if (!timelineData.start) {
             return 0;
         }
 
         const start = new Date(timelineData.start).getTime();
-        const end = this.endDate.getTime();
+        const end = this.endDate().getTime();
 
         if (!start || !end || end <= start) {
             return 0;
@@ -343,11 +391,12 @@ export class TimelineEntry extends Component {
     }
 
     getSessionInfo(sessionId) {
-        if (!sessionId || !this.props.timelineData || !this.props.timelineData.entriesBySessionId) {
+        const timelineData = this.timelineData();
+        if (!sessionId || !timelineData.entriesBySessionId) {
             return {};
         }
 
-        return this.props.timelineData.entriesBySessionId[sessionId] || {};
+        return timelineData.entriesBySessionId[sessionId] || {};
     }
 
     getSessionEvents(sessionId) {
@@ -359,71 +408,16 @@ export class TimelineEntry extends Component {
         return sessionInfo.logs;
     }
 
-    getTimelineTitle() {
-        if (!this.props.timelineData) {
-            return "Timeline";
-        }
-
-        try {
-            const date = new Date(this.props.timelineKey);
-            const formattedDate = date.toISOString();
-
-            const channelId = this.props.timelineData.channelId;
-            const selfSessionId = this.props.timelineData.selfSessionId;
-
-            return `Timeline: Channel ${channelId} - Session ${selfSessionId} - ${formattedDate}`;
-        } catch {
-            return `Timeline: ${this.props.timelineKey}`;
-        }
-    }
-
     toggleSessionDetails(sessionId) {
         this.state.expandedSessions[sessionId] = !this.state.expandedSessions[sessionId];
     }
 
     isSessionSelf(sessionId) {
-        if (!this.props.timelineData) {
+        const timelineData = this.timelineData();
+        if (!timelineData.selfSessionId) {
             return false;
         }
-        return sessionId === this.props.timelineData.selfSessionId?.toString();
-    }
-
-    getVisibleTimeRange() {
-        const timelineData = this.props.timelineData;
-        if (!timelineData) {
-            return { visibleStartTime: new Date(), visibleEndTime: new Date() };
-        }
-
-        const fullStartTime = new Date(timelineData.start);
-        const fullEndTime = this.endDate;
-        const fullRange = fullEndTime.getTime() - fullStartTime.getTime();
-
-        // If no zoom, show full range
-        if (this.state.zoomLevel <= 1) {
-            return {
-                visibleStartTime: fullStartTime,
-                visibleEndTime: fullEndTime,
-                fullStartTime,
-                fullEndTime,
-            };
-        }
-
-        // Calculate visible range based on zoom
-        const visibleRangeDuration = fullRange / this.state.zoomLevel;
-
-        // Use zoomStartPercent to determine start time
-        const startOffset = (fullRange * this.state.zoomStartPercent) / 100;
-
-        // Calculate visible start and end times
-        const visibleStartTime = new Date(fullStartTime.getTime() + startOffset);
-        const visibleEndTime = new Date(visibleStartTime.getTime() + visibleRangeDuration);
-
-        return {
-            visibleStartTime,
-            visibleEndTime,
-            fullStartTime,
-            fullEndTime,
-        };
+        return sessionId === timelineData.selfSessionId.toString();
     }
 
     getEventTimestamp(event) {
@@ -459,7 +453,7 @@ export class TimelineEntry extends Component {
             return 0;
         }
 
-        const { visibleStartTime, visibleEndTime } = this.getVisibleTimeRange();
+        const { visibleStartTime, visibleEndTime } = this.visibleTimeRange();
         const start = visibleStartTime.getTime();
         const end = visibleEndTime.getTime();
 
@@ -528,7 +522,7 @@ export class TimelineEntry extends Component {
             return false;
         }
 
-        const { visibleStartTime, visibleEndTime } = this.getVisibleTimeRange();
+        const { visibleStartTime, visibleEndTime } = this.visibleTimeRange();
         const start = visibleStartTime.getTime();
         const end = visibleEndTime.getTime();
 
@@ -798,7 +792,7 @@ export class TimelineEntry extends Component {
 
         // Find and scroll to the event in the list
         setTimeout(() => {
-            const eventElements = this.rootRef.el?.querySelectorAll(
+            const eventElements = this.rootRef()?.querySelectorAll(
                 `.session-row[data-session-id="${sessionId}"] .event-item`,
             );
             if (!eventElements.length) {
@@ -849,16 +843,6 @@ export class TimelineEntry extends Component {
         }
     }
 
-    getTimelineTotalDuration() {
-        const timelineData = this.props.timelineData;
-        if (!timelineData) {
-            return 0;
-        }
-
-        const start = new Date(timelineData.start);
-        const end = this.endDate;
-        return end.getTime() - start.getTime();
-    }
 
     getSessionLastState(sessionId) {
         const segments = this.getConnectionStateSegments(sessionId);

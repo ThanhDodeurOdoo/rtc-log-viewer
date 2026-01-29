@@ -1,6 +1,7 @@
-const { Component, xml, useState, useEffect } = owl;
+const { Component, xml, proxy, useEffect, computed, plugin } = owl;
 import helpers from "./utils/helpers.js";
 import { NoData } from "./common/ui_components.js";
+import { LogPlugin } from "./plugins/log_plugin.js";
 
 const ISSUE_TYPES = {
     ERROR: "error",
@@ -30,15 +31,15 @@ export class AnalysisView extends Component {
             <h3>Connection Analysis [⚠️WORK IN PROGESS⚠️]</h3>
             <p class="view-description">Automatic analysis of connection issues and potential problems.</p>
             <NoData
-                t-if="!hasLogData"
+                t-if="!this.hasLogData()"
                 message="'No log data available for analysis'"
             />
             <div t-else="" class="analysis-content">
-                <div t-if="state.isAnalyzing" class="loading-analysis">
+                <div t-if="this.state.isAnalyzing" class="loading-analysis">
                     <p>Analyzing connection logs...</p>
                 </div>
                 
-                <div t-elif="state.groupedResults.length === 0" class="no-issues-found">
+                <div t-elif="this.state.groupedResults.length === 0" class="no-issues-found">
                     <h4>No Issues Detected</h4>
                     <p>The analysis did not find any significant connection problems in the logs.</p>
                 </div>
@@ -47,7 +48,7 @@ export class AnalysisView extends Component {
                     <h4>Analysis Results</h4>
                     <div class="issue-list">
                         <div
-                            t-foreach="state.groupedResults"
+                            t-foreach="this.state.groupedResults"
                             t-as="group"
                             t-key="group_index"
                             t-attf-class="issue-item {{ group.type }}"
@@ -55,65 +56,65 @@ export class AnalysisView extends Component {
                             <div class="issue-header" t-on-click="() => this.toggleIssueDetails(group_index)">
                                 <h5 class="issue-title">
                                     <span t-attf-class="issue-icon {{ group.type }}"></span>
-                                    <span t-esc="group.title"></span>
+                                    <span t-out="group.title"></span>
                                     <span class="issue-count" t-if="group.count > 1">
-                                        (<t t-esc="group.count"/> occurrences)
+                                        (<t t-out="group.count"/> occurrences)
                                     </span>
                                 </h5>
                                 
                                 <button
-                                    t-attf-class="issue-toggle {{ state.expandedIssues[group_index] ? 'expanded' : 'collapsed' }}"
+                                    t-attf-class="issue-toggle {{ this.state.expandedIssues[group_index] ? 'expanded' : 'collapsed' }}"
                                     t-on-click.stop="() => this.toggleIssueDetails(group_index)"
                                 >
-                                    <t t-esc="state.expandedIssues[group_index] ? '▼' : '►'" />
+                                    <t t-out="this.state.expandedIssues[group_index] ? '▼' : '►'" />
                                 </button>
                             </div>
                             
-                            <div class="issue-description" t-esc="group.description"></div>
+                            <div class="issue-description" t-out="group.description"></div>
                             
-                            <div t-if="state.expandedIssues[group_index]" class="issue-details">
+                            <div t-if="this.state.expandedIssues[group_index]" class="issue-details">
                                 <div class="issue-recommendation">
                                     <h6>Recommendation</h6>
-                                    <p t-esc="getRecommendation(group)"></p>
+                                    <p t-out="this.getRecommendation(group)"></p>
                                 </div>
 
                                 <div t-if="group.count > 1" class="issue-instances">
-                                    <h6>Occurrences (<t t-esc="group.count"/>)</h6>
+                                    <h6>Occurrences (<t t-out="group.count"/>)</h6>
                                     
                                     <div t-foreach="group.instances" t-as="instance" t-key="instance_index" class="issue-instance">
                                         <div class="instance-header" t-on-click="() => this.toggleInstanceDetails(group_index, instance_index)">
                                             <h6 class="instance-title">
-                                                <span t-if="instance.sessionId">Session <t t-esc="instance.sessionId"/></span>
+                                                <span t-if="instance.sessionId">Session <t t-out="instance.sessionId"/></span>
                                                 <span t-if="instance.timestamp" class="instance-source">
-                                                    - Snapshot <t t-esc="helpers.formatTime(instance.timestamp)"/>
+                                                    - Snapshot <t t-out="this.helpers.formatTime(instance.timestamp)"/>
                                                 </span>
                                                 <span t-elif="instance.timelineKey" class="instance-source">
-                                                    - Timeline <t t-esc="helpers.formatTime(instance.timelineKey)"/>
+                                                    - Timeline <t t-out="this.helpers.formatTime(instance.timelineKey)"/>
                                                 </span>
                                             </h6>
                                             
                                             <button
-                                                t-attf-class="instance-toggle {{ state.expandedInstances[group_index + '-' + instance_index] ? 'expanded' : 'collapsed' }}"
+                                                t-attf-class="instance-toggle {{ this.state.expandedInstances[group_index + '-' + instance_index] ? 'expanded' : 'collapsed' }}"
                                                 t-on-click.stop="() => this.toggleInstanceDetails(group_index, instance_index)"
                                             >
-                                                <t t-esc="state.expandedInstances[group_index + '-' + instance_index] ? '▼' : '►'" />
+                                                <t t-out="this.state.expandedInstances[group_index + '-' + instance_index] ? '▼' : '►'" />
                                             </button>
                                         </div>
                                         
-                                        <div t-if="state.expandedInstances[group_index + '-' + instance_index]" class="instance-details">
+                                        <div t-if="this.state.expandedInstances[group_index + '-' + instance_index]" class="instance-details">
                                             <div t-if="instance.timestamp" class="issue-metadata">
                                                 <span class="metadata-label">Detected at:</span>
-                                                <span class="metadata-value" t-esc="helpers.formatTime(instance.timestamp)"></span>
+                                                <span class="metadata-value" t-out="this.helpers.formatTime(instance.timestamp)"></span>
                                             </div>
                                             
                                             <div t-if="instance.sessionId" class="issue-metadata">
                                                 <span class="metadata-label">Session ID:</span>
-                                                <span class="metadata-value" t-esc="instance.sessionId"></span>
+                                                <span class="metadata-value" t-out="instance.sessionId"></span>
                                             </div>
                                             
                                             <div t-if="instance.details" class="issue-technical-details">
                                                 <h6>Technical Details</h6>
-                                                <pre t-esc="window.JSON.stringify(instance.details, null, 2)"></pre>
+                                                <pre t-out="window.JSON.stringify(instance.details, null, 2)"></pre>
                                             </div>
                                         </div>
                                     </div>
@@ -124,10 +125,10 @@ export class AnalysisView extends Component {
                                         <span class="metadata-label">Source:</span>
                                         <span class="metadata-value source-indicator">
                                             <span t-if="group.timestamp" class="source-tag snapshot-source">
-                                                Snapshot <t t-esc="helpers.formatTime(group.timestamp)"/>
+                                                Snapshot <t t-out="this.helpers.formatTime(group.timestamp)"/>
                                             </span>
                                             <span t-elif="group.timelineKey" class="source-tag timeline-source">
-                                                Timeline <t t-esc="helpers.formatTime(group.timelineKey)"/>
+                                                Timeline <t t-out="this.helpers.formatTime(group.timelineKey)"/>
                                             </span>
                                             <span t-else="" class="source-tag unknown-source">
                                                 Unknown source
@@ -137,12 +138,12 @@ export class AnalysisView extends Component {
                                     
                                     <div t-if="group.sessionId" class="issue-metadata">
                                         <span class="metadata-label">Session ID:</span>
-                                        <span class="metadata-value" t-esc="group.sessionId"></span>
+                                        <span class="metadata-value" t-out="group.sessionId"></span>
                                     </div>
                                     
                                     <div t-if="group.details" class="issue-technical-details">
                                         <h6>Technical Details</h6>
-                                        <pre t-esc="window.JSON.stringify(group.details, null, 2)"></pre>
+                                        <pre t-out="window.JSON.stringify(group.details, null, 2)"></pre>
                                     </div>
                                 </div>
                             </div>
@@ -162,50 +163,43 @@ export class AnalysisView extends Component {
     `;
 
     static components = { NoData };
-    static props = ["logs?"];
-
     setup() {
-        this.state = useState({
-            rawResults: [], // Store all raw issues
-            groupedResults: [], // Grouped issues
+        this.log = plugin(LogPlugin);
+        this.state = proxy({
+            rawResults: [],
+            groupedResults: [],
             isAnalyzing: false,
             expandedIssues: {},
             expandedInstances: {},
         });
-
         this.helpers = helpers;
-        useEffect(
-            () => {
-                this.analyzeData();
-            },
-            () => [this.props.logs],
-        );
+        this.hasLogData = computed(() => {
+            const logs = this.log.filteredLogs();
+            return logs && (logs.timelines || logs.snapshots);
+        });
+        useEffect(() => {
+            const logs = this.log.filteredLogs();
+            if (!logs || (!logs.timelines && !logs.snapshots)) {
+                this.state.rawResults = [];
+                this.state.groupedResults = [];
+                return;
+            }
+            this.analyzeData(logs);
+        });
     }
 
-    get hasLogData() {
-        return this.props.logs && (this.props.logs.timelines || this.props.logs.snapshots);
-    }
-
-    getTotalIssueCount() {
-        return this.state.rawResults.length;
-    }
-
-    async analyzeData() {
-        if (!this.hasLogData) {
-            return;
-        }
-
+    analyzeData(logs) {
         this.state.isAnalyzing = true;
 
         try {
             const results = [];
-            this.checkFallbackMode(results);
-            this.checkRecoveryLoops(results);
-            this.checkStuckSessions(results);
-            this.checkConnectionIssues(results);
-            this.checkCallQuality(results);
-            this.checkTurnServerUsage(results);
-            this.checkCandidateTypes(results);
+            this.checkFallbackMode(logs, results);
+            this.checkRecoveryLoops(logs, results);
+            this.checkStuckSessions(logs, results);
+            this.checkConnectionIssues(logs, results);
+            this.checkCallQuality(logs, results);
+            this.checkTurnServerUsage(logs, results);
+            this.checkCandidateTypes(logs, results);
 
             this.sortResultsBySeverity(results);
             this.state.rawResults = results;
@@ -335,8 +329,8 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkFallbackMode(results) {
-        const snapshots = this.props.logs.snapshots;
+    checkFallbackMode(logs, results) {
+        const snapshots = logs.snapshots;
         if (!snapshots) {
             return;
         }
@@ -359,8 +353,8 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkRecoveryLoops(results) {
-        const timelines = this.props.logs.timelines;
+    checkRecoveryLoops(logs, results) {
+        const timelines = logs.timelines;
         if (!timelines) {
             return;
         }
@@ -404,8 +398,8 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkStuckSessions(results) {
-        const snapshots = this.props.logs.snapshots;
+    checkStuckSessions(logs, results) {
+        const snapshots = logs.snapshots;
         if (!snapshots) {
             return;
         }
@@ -439,14 +433,14 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkConnectionIssues(results) {
-        this.checkIceFailures(results);
-        this.checkSfuErrors(results);
-        this.checkMediaIssues(results);
+    checkConnectionIssues(logs, results) {
+        this.checkIceFailures(logs, results);
+        this.checkSfuErrors(logs, results);
+        this.checkMediaIssues(logs, results);
     }
 
-    checkIceFailures(results) {
-        const timelines = this.props.logs.timelines;
+    checkIceFailures(logs, results) {
+        const timelines = logs.timelines;
         if (!timelines) {
             return;
         }
@@ -490,8 +484,8 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkSfuErrors(results) {
-        const snapshots = this.props.logs.snapshots;
+    checkSfuErrors(logs, results) {
+        const snapshots = logs.snapshots;
         if (!snapshots) {
             return;
         }
@@ -530,8 +524,8 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkMediaIssues(results) {
-        const snapshots = this.props.logs.snapshots;
+    checkMediaIssues(logs, results) {
+        const snapshots = logs.snapshots;
         if (!snapshots) {
             return;
         }
@@ -560,8 +554,8 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkCallQuality(results) {
-        const timelines = this.props.logs.timelines;
+    checkCallQuality(logs, results) {
+        const timelines = logs.timelines;
         if (!timelines) {
             return;
         }
@@ -603,8 +597,8 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkTurnServerUsage(results) {
-        const timelines = this.props.logs.timelines;
+    checkTurnServerUsage(logs, results) {
+        const timelines = logs.timelines;
         if (!timelines) {
             return;
         }
@@ -626,8 +620,8 @@ export class AnalysisView extends Component {
         }
     }
 
-    checkCandidateTypes(results) {
-        const snapshots = this.props.logs.snapshots;
+    checkCandidateTypes(logs, results) {
+        const snapshots = logs.snapshots;
         if (!snapshots) {
             return;
         }

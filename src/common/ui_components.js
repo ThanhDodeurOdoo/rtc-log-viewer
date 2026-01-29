@@ -1,62 +1,68 @@
-const { Component, xml, useState } = owl;
+const { Component, xml, signal, props } = owl;
 import helpers from "../utils/helpers.js";
 
 export class ExpandableSection extends Component {
     static template = xml`
-        <div t-attf-class="{{ props.className }}">
-            <div t-attf-class="{{ props.headerClass }}">
-                <h4 t-esc="props.title"></h4>
+        <div t-attf-class="{{ this.props.className }}">
+            <div t-attf-class="{{ this.props.headerClass }}">
+                <h4 t-out="this.props.title"></h4>
                 <button
-                    t-attf-class="{{ props.toggleClass }} {{ state.expanded ? 'expanded' : 'collapsed' }}"
-                    t-on-click="toggleExpanded"
+                    t-attf-class="{{ this.props.toggleClass }} {{ this.expanded() ? 'expanded' : 'collapsed' }}"
+                    t-on-click="this.toggleExpanded"
                 >
-                    <t t-esc="state.expanded ? '▼' : '►'" />
+                    <t t-out="this.expanded() ? '▼' : '►'" />
                 </button>
             </div>
-            <div t-if="state.expanded" t-attf-class="{{ props.contentClass }}">
-                <t t-slot="default"/>
+            <div t-if="this.expanded()" t-attf-class="{{ this.props.contentClass }}">
+                <t t-call-slot="default"/>
             </div>
         </div>
     `;
 
+    props = props();
+
     setup() {
-        this.state = useState({ expanded: this.props.initialExpanded || false });
+        this.expanded = signal(this.props.initialExpanded || false);
     }
 
     toggleExpanded() {
-        this.state.expanded = !this.state.expanded;
+        this.expanded.set(!this.expanded());
     }
 }
 
 export class NoData extends Component {
     static template = xml`
         <div class="no-data">
-            <t t-esc="props.message || 'No data available'"/>
+            <t t-out="this.props.message || 'No data available'"/>
         </div>
     `;
+
+    props = props();
 }
 
 export class EventList extends Component {
     static template = xml`
         <div class="event-list">
-            <div t-if="!props.events.length" class="no-data">
-                <t t-esc="props.noDataMessage || 'No events available'"/>
+            <div t-if="!this.props.events.length" class="no-data">
+                <t t-out="this.props.noDataMessage || 'No events available'"/>
             </div>
             
             <div t-else="" class="event-items">
                 <div 
-                    t-foreach="props.events" 
+                    t-foreach="this.props.events" 
                     t-as="event" 
                     t-key="event_index"
                     t-attf-class="event-item {{ event.level ? event.level : '' }}"
                 >
-                    <span class="event-time" t-esc="helpers.formatEventTime(event)"></span>
-                    <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-esc="event.level"></span>
-                    <span class="event-text" t-esc="helpers.formatEventText(event)"></span>
+                    <span class="event-time" t-out="this.helpers.formatEventTime(event)"></span>
+                    <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-out="event.level"></span>
+                    <span class="event-text" t-out="this.helpers.formatEventText(event)"></span>
                 </div>
             </div>
         </div>
     `;
+
+    props = props();
 
     setup() {
         this.helpers = helpers;
@@ -67,33 +73,33 @@ export class SessionProperties extends Component {
     static template = xml`
         <div class="session-properties">
             <!-- Audio information -->
-            <div t-if="props.session.audio" class="property-card">
+            <div t-if="this.props.session.audio" class="property-card">
                 <h6>Audio</h6>
                 <ul class="property-list">
-                    <li><span class="property-name">State:</span> <span t-esc="helpers.getAudioState(props.session.audio.state)"></span></li>
-                    <li><span class="property-name">Muted:</span> <span t-esc="props.session.audio.muted ? 'Yes' : 'No'"></span></li>
-                    <li><span class="property-name">Paused:</span> <span t-esc="props.session.audio.paused ? 'Yes' : 'No'"></span></li>
-                    <li t-if="props.session.audio.networkState !== undefined"><span class="property-name">Network State:</span> <span t-esc="helpers.getNetworkState(props.session.audio.networkState)"></span></li>
+                    <li><span class="property-name">State:</span> <span t-out="this.helpers.getAudioState(this.props.session.audio.state)"></span></li>
+                    <li><span class="property-name">Muted:</span> <span t-out="this.props.session.audio.muted ? 'Yes' : 'No'"></span></li>
+                    <li><span class="property-name">Paused:</span> <span t-out="this.props.session.audio.paused ? 'Yes' : 'No'"></span></li>
+                    <li t-if="this.props.session.audio.networkState !== undefined"><span class="property-name">Network State:</span> <span t-out="this.helpers.getNetworkState(this.props.session.audio.networkState)"></span></li>
                 </ul>
             </div>
             
             <!-- Peer information -->
-            <div t-if="props.session.peer" class="property-card">
+            <div t-if="this.props.session.peer" class="property-card">
                 <h6>Peer Connection</h6>
                 <ul class="property-list">
-                    <li><span class="property-name">ID:</span> <span t-esc="props.session.peer.id"></span></li>
-                    <li><span class="property-name">State:</span> <span t-esc="props.session.peer.state"></span></li>
-                    <li><span class="property-name">ICE State:</span> <span t-esc="props.session.peer.iceState"></span></li>
+                    <li><span class="property-name">ID:</span> <span t-out="this.props.session.peer.id"></span></li>
+                    <li><span class="property-name">State:</span> <span t-out="this.props.session.peer.state"></span></li>
+                    <li><span class="property-name">ICE State:</span> <span t-out="this.props.session.peer.iceState"></span></li>
                 </ul>
             </div>
             
             <!-- SFU info -->
-            <div t-if="props.session.sfuConsumers and props.session.sfuConsumers.length > 0" class="property-card">
+            <div t-if="this.props.session.sfuConsumers and this.props.session.sfuConsumers.length > 0" class="property-card">
                 <h6>SFU Consumers</h6>
                 <ul class="property-list">
-                    <li t-foreach="props.session.sfuConsumers" t-as="consumer" t-key="consumer_index">
-                        <span class="property-name" t-esc="consumer.type"></span>: 
-                        <span t-esc="consumer.state"></span>
+                    <li t-foreach="this.props.session.sfuConsumers" t-as="consumer" t-key="consumer_index">
+                        <span class="property-name" t-out="consumer.type"></span>: 
+                        <span t-out="consumer.state"></span>
                     </li>
                 </ul>
             </div>
@@ -102,22 +108,24 @@ export class SessionProperties extends Component {
             <div class="property-card">
                 <h6>Other Properties</h6>
                 <ul class="property-list">
-                    <li t-if="props.session.channelMemberId !== undefined">
+                    <li t-if="this.props.session.channelMemberId !== undefined">
                         <span class="property-name">Channel Member ID:</span> 
-                        <span t-esc="props.session.channelMemberId"></span>
+                        <span t-out="this.props.session.channelMemberId"></span>
                     </li>
-                    <li t-if="props.session.audioError">
+                    <li t-if="this.props.session.audioError">
                         <span class="property-name">Audio Error:</span> 
-                        <span t-esc="props.session.audioError"></span>
+                        <span t-out="this.props.session.audioError"></span>
                     </li>
-                    <li t-if="props.session.videoError">
+                    <li t-if="this.props.session.videoError">
                         <span class="property-name">Video Error:</span> 
-                        <span t-esc="props.session.videoError"></span>
+                        <span t-out="this.props.session.videoError"></span>
                     </li>
                 </ul>
             </div>
         </div>
     `;
+
+    props = props();
 
     setup() {
         this.helpers = helpers;
@@ -126,11 +134,13 @@ export class SessionProperties extends Component {
 export class ConnectionState extends Component {
     static template = xml`
         <div class="connection-state">
-            <div t-attf-class="state-indicator {{ props.stateClass }}"></div>
-            <span class="property-name"><t t-esc="props.label || 'State:'"/></span>
-            <span class="property-value" t-esc="props.state || 'Unknown'"></span>
+            <div t-attf-class="state-indicator {{ this.props.stateClass }}"></div>
+            <span class="property-name"><t t-out="this.props.label || 'State:'"/></span>
+            <span class="property-value" t-out="this.props.state || 'Unknown'"></span>
         </div>
     `;
+
+    props = props();
 }
 
 export default {

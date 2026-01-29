@@ -1,7 +1,7 @@
-const { Component, xml } = owl;
-import helpers from "./utils/helpers.js";
+const { Component, xml, plugin } = owl;
 import { NoData } from "./common/ui_components.js";
 import { TimelineEntry } from "./timeline_entry.js";
+import { LogPlugin } from "./plugins/log_plugin.js";
 
 export class TimelineViewer extends Component {
     static template = xml`
@@ -10,20 +10,18 @@ export class TimelineViewer extends Component {
             <p class="view-description">Each timeline represents a sequence of events for a specific call session.</p>
             
             <NoData 
-                t-if="!timelineKeys.length" 
+                t-if="!this.timelineKeys().length" 
                 message="'No timeline data available in this log file'"
             />
             
             <div t-else="" class="timeline-list">
                 <div 
-                    t-foreach="timelineKeys" 
+                    t-foreach="this.timelineKeys()" 
                     t-as="timelineKey" 
                     t-key="timelineKey"
                 >
                     <TimelineEntry 
                         timelineKey="timelineKey"
-                        timelineData="props.logs.timelines[timelineKey]"
-                        lastRelevantTimestamp="props.lastRelevantTimestamp"
                     />
                 </div>
             </div>
@@ -36,13 +34,7 @@ export class TimelineViewer extends Component {
     };
 
     setup() {
-        this.helpers = helpers;
-    }
-
-    get timelineKeys() {
-        if (!this.props.logs || !this.props.logs.timelines) {
-            return [];
-        }
-        return Object.keys(this.props.logs.timelines).sort();
+        this.log = plugin(LogPlugin);
+        this.timelineKeys = this.log.filteredTimelineKeys;
     }
 }
