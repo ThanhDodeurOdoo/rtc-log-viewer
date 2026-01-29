@@ -16,6 +16,9 @@
                     <span t-if="this.fileName()" class="file-name" t-out="this.fileName()" />
                     <span t-else="" class="file-hint">No file chosen</span>
                 </div>
+                <div class="demo-loader">
+                    <button class="demo-button" t-on-click="this.loadDemoData">Load demo data</button>
+                </div>
             </div>
         </div>
     </t>

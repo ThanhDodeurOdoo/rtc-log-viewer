@@ -382,6 +382,23 @@ label {
     background-color: var(--color-primary-dark);
 }
 
+.demo-loader {
+    margin-top: var(--space-sm);
+}
+
+.demo-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    text-decoration: underline;
+}
+
+.demo-button:hover {
+    color: var(--color-secondary);
+}
+
 .file-name {
     margin-left: var(--space-sm);
     font-weight: var(--font-weight-bold);

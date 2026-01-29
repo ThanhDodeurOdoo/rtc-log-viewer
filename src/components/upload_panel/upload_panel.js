@@ -63,4 +63,21 @@ export class UploadPanel extends Component {
         };
         reader.readAsText(file);
     }
+
+    async loadDemoData() {
+        try {
+            const response = await fetch(
+                new URL("../../demo/rtc_log_demo.json", import.meta.url),
+            );
+            if (!response.ok) {
+                throw new Error(`Failed to load demo data: ${response.status}`);
+            }
+            const logs = await response.json();
+            this.log.load(logs);
+            this.fileName.set("Demo data");
+        } catch (error) {
+            console.error("Failed to load demo data:", error);
+            alert("Failed to load demo data. Please try again later.");
+        }
+    }
 }

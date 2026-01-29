@@ -10,7 +10,7 @@
                 <MainView activeView="this.activeView" />
             </div>
             <footer class="app-footer">
-                <p>Powered by <a href="https://github.com/odoo/owl" target="_blank">odoo/OWL</a>
+                <p>Powered by <a href="https://github.com/odoo/owl" target="_blank">odoo/OWL3</a>
                 </p>
                 <p>Source code on <a href="https://github.com/ThanhDodeurOdoo/rtc-log-viewer" target="_blank">GitHub</a>
                 </p>
