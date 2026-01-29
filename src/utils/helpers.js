@@ -23,6 +23,53 @@ export function formatEventText(event) {
     return event.event;
 }
 
+const ISO_EVENT_TIME_REGEX =
+    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/;
+
+export function extractEventDate(event, timelineKey) {
+    if (!event || !event.event) {
+        return null;
+    }
+
+    const match = event.event.match(ISO_EVENT_TIME_REGEX);
+    if (match && match[1]) {
+        const date = new Date(match[1]);
+        if (!Number.isNaN(date.getTime())) {
+            return date;
+        }
+    }
+
+    const timeText = formatEventTime(event);
+    if (!timeText) {
+        return null;
+    }
+
+    const base = new Date(timelineKey);
+    if (Number.isNaN(base.getTime())) {
+        return null;
+    }
+
+    const [timePart, msText] = timeText.split(".");
+    const [hours, minutes, seconds] = timePart.split(":").map(Number);
+    if ([hours, minutes, seconds].some((value) => Number.isNaN(value))) {
+        return null;
+    }
+
+    const ms = Number(msText || 0);
+    const date = new Date(
+        Date.UTC(
+            base.getUTCFullYear(),
+            base.getUTCMonth(),
+            base.getUTCDate(),
+            hours,
+            minutes,
+            seconds,
+            ms
+        )
+    );
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function formatTime(timelineKey) {
     if (!timelineKey) {
         return "";
@@ -263,4 +310,5 @@ export default {
     eventContains,
     getEventSeverity,
     extractConnectionState,
+    extractEventDate,
 };

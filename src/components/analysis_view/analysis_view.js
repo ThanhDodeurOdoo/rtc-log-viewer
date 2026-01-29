@@ -39,47 +39,6 @@ const ICE_MISSING_PEER_THRESHOLD = 3;
 const SFU_SLOW_CONNECT_MS = 5000;
 const AUDIO_STALL_READY_STATE = 2;
 const AUDIO_STALL_NETWORK_STATE = 3;
-const ISO_EVENT_TIME_REGEX =
-    /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/;
-
-function extractEventDate(log, timelineKey) {
-    if (!log || !log.event) {
-        return null;
-    }
-    const match = log.event.match(ISO_EVENT_TIME_REGEX);
-    if (match && match[1]) {
-        const date = new Date(match[1]);
-        if (!Number.isNaN(date.getTime())) {
-            return date;
-        }
-    }
-    const timeText = helpers.formatEventTime(log);
-    if (!timeText) {
-        return null;
-    }
-    const base = new Date(timelineKey);
-    if (Number.isNaN(base.getTime())) {
-        return null;
-    }
-    const [timePart, msText] = timeText.split(".");
-    const [hours, minutes, seconds] = timePart.split(":").map(Number);
-    if ([hours, minutes, seconds].some((value) => Number.isNaN(value))) {
-        return null;
-    }
-    const ms = Number(msText || 0);
-    const date = new Date(
-        Date.UTC(
-            base.getUTCFullYear(),
-            base.getUTCMonth(),
-            base.getUTCDate(),
-            hours,
-            minutes,
-            seconds,
-            ms
-        )
-    );
-    return Number.isNaN(date.getTime()) ? null : date;
-}
 
 export class AnalysisView extends Component {
     static template = "AnalysisView";
@@ -509,7 +468,7 @@ export class AnalysisView extends Component {
             const lastStateLog = [...logsArray]
                 .reverse()
                 .find((log) => helpers.eventContains(log, "connection state change:"));
-            const loadTime = extractEventDate(loadLog, timelineKey);
+            const loadTime = helpers.extractEventDate(loadLog, timelineKey);
             const endTime = timeline.end ? new Date(timeline.end) : null;
             const duration =
                 loadTime && endTime && !Number.isNaN(endTime.getTime())
@@ -556,8 +515,8 @@ export class AnalysisView extends Component {
                 continue;
             }
 
-            const loadTime = extractEventDate(loadLog, timelineKey);
-            const connectedTime = extractEventDate(connectedLog, timelineKey);
+            const loadTime = helpers.extractEventDate(loadLog, timelineKey);
+            const connectedTime = helpers.extractEventDate(connectedLog, timelineKey);
             if (!loadTime || !connectedTime) {
                 continue;
             }

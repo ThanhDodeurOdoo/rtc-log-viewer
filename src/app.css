@@ -1476,10 +1476,127 @@ label {
     gap: var(--space-md);
 }
 
+.timing-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
 .analysis-content {
     background-color: var(--color-surface);
     border-radius: var(--radius-md);
     padding: var(--space-lg);
+}
+
+.timing-content {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+}
+
+.timing-analysis {
+    border: var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    background-color: var(--color-bg-light);
+    margin-bottom: var(--space-lg);
+}
+
+.timing-description {
+    color: var(--color-text-secondary);
+    margin-top: var(--space-xs);
+    margin-bottom: var(--space-md);
+}
+
+.timing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-md);
+}
+
+.timing-card {
+    background-color: var(--color-surface);
+    border: var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.timing-card h5 {
+    margin-top: 0;
+    margin-bottom: var(--space-sm);
+}
+
+.timing-samples {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+}
+
+.timing-samples-column h6 {
+    margin: 0 0 var(--space-xs);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.timing-sample-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.timing-sample-item {
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xxs);
+    font-size: var(--font-size-xs);
+}
+
+.sample-duration {
+    font-weight: var(--font-weight-bold);
+}
+
+.sample-meta {
+    color: var(--color-text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xxs);
+}
+
+.sample-separator {
+    color: var(--color-text-muted);
+}
+
+.timing-metric {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    font-size: var(--font-size-sm);
+    padding: var(--space-xs) 0;
+}
+
+.timing-metric + .timing-metric {
+    border-top: 1px solid var(--color-bg-medium);
+}
+
+.metric-label {
+    color: var(--color-text-muted);
+}
+
+.metric-value {
+    font-weight: var(--font-weight-bold);
+}
+
+.timing-empty {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
 }
 
 .issue-list {

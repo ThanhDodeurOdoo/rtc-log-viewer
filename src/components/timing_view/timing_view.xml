@@ -1,0 +1,143 @@
+<templates>
+    <t t-name="TimingView">
+        <div class="timing-view">
+            <h3>Timing Analysis</h3>
+            <p class="view-description">
+                Connection timing metrics derived from SFU and peer-to-peer log events.
+            </p>
+            <NoData t-if="!this.hasLogData()" message="'No log data available for timing analysis'" />
+            <div t-else="" class="timing-content">
+                <div t-if="this.isAnalyzing()" class="loading-analysis">
+                    <p>Analyzing timing data...</p>
+                </div>
+                <div t-else="" class="timing-analysis">
+                    <div t-if="!this.timingStats().sfu &amp;&amp; !this.timingStats().p2p" class="timing-empty">
+                        No timing samples available for SFU or P2P connections.
+                    </div>
+                    <div t-else="" class="timing-grid">
+                        <div class="timing-card">
+                            <h5>SFU Connect</h5>
+                            <t t-if="this.timingStats().sfu">
+                                <div class="timing-metric">
+                                    <span class="metric-label">Samples</span>
+                                    <span class="metric-value" t-out="this.timingStats().sfu.stats.count" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">Average</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().sfu.stats.avgMs)" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">Best</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().sfu.stats.minMs)" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">Worst</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().sfu.stats.maxMs)" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">Median</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().sfu.stats.medianMs)" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">P95</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().sfu.stats.p95Ms)" />
+                                </div>
+                                <div class="timing-samples">
+                                    <div class="timing-samples-column">
+                                        <h6>Fastest</h6>
+                                        <ul class="timing-sample-list">
+                                            <li t-foreach="this.timingStats().sfu.fastest" t-as="sample" t-key="sample_index" class="timing-sample-item">
+                                                <span class="sample-duration" t-out="this.helpers.formatDuration(sample.durationMs)" />
+                                                <span class="sample-meta">
+                                                    <span t-if="sample.sessionId">Session <t t-out="sample.sessionId" /></span>
+                                                    <span class="sample-separator">|</span>
+                                                    <span>Timeline <t t-out="this.helpers.formatTime(sample.timelineKey)" /></span>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="timing-samples-column">
+                                        <h6>Slowest</h6>
+                                        <ul class="timing-sample-list">
+                                            <li t-foreach="this.timingStats().sfu.slowest" t-as="sample" t-key="sample_index" class="timing-sample-item">
+                                                <span class="sample-duration" t-out="this.helpers.formatDuration(sample.durationMs)" />
+                                                <span class="sample-meta">
+                                                    <span t-if="sample.sessionId">Session <t t-out="sample.sessionId" /></span>
+                                                    <span class="sample-separator">|</span>
+                                                    <span>Timeline <t t-out="this.helpers.formatTime(sample.timelineKey)" /></span>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <p class="timing-empty">No SFU timing samples found.</p>
+                            </t>
+                        </div>
+                        <div class="timing-card">
+                            <h5>P2P Connect</h5>
+                            <t t-if="this.timingStats().p2p">
+                                <div class="timing-metric">
+                                    <span class="metric-label">Samples</span>
+                                    <span class="metric-value" t-out="this.timingStats().p2p.stats.count" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">Average</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().p2p.stats.avgMs)" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">Best</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().p2p.stats.minMs)" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">Worst</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().p2p.stats.maxMs)" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">Median</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().p2p.stats.medianMs)" />
+                                </div>
+                                <div class="timing-metric">
+                                    <span class="metric-label">P95</span>
+                                    <span class="metric-value" t-out="this.helpers.formatDuration(this.timingStats().p2p.stats.p95Ms)" />
+                                </div>
+                                <div class="timing-samples">
+                                    <div class="timing-samples-column">
+                                        <h6>Fastest</h6>
+                                        <ul class="timing-sample-list">
+                                            <li t-foreach="this.timingStats().p2p.fastest" t-as="sample" t-key="sample_index" class="timing-sample-item">
+                                                <span class="sample-duration" t-out="this.helpers.formatDuration(sample.durationMs)" />
+                                                <span class="sample-meta">
+                                                    <span t-if="sample.sessionId">Session <t t-out="sample.sessionId" /></span>
+                                                    <span class="sample-separator">|</span>
+                                                    <span>Timeline <t t-out="this.helpers.formatTime(sample.timelineKey)" /></span>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="timing-samples-column">
+                                        <h6>Slowest</h6>
+                                        <ul class="timing-sample-list">
+                                            <li t-foreach="this.timingStats().p2p.slowest" t-as="sample" t-key="sample_index" class="timing-sample-item">
+                                                <span class="sample-duration" t-out="this.helpers.formatDuration(sample.durationMs)" />
+                                                <span class="sample-meta">
+                                                    <span t-if="sample.sessionId">Session <t t-out="sample.sessionId" /></span>
+                                                    <span class="sample-separator">|</span>
+                                                    <span>Timeline <t t-out="this.helpers.formatTime(sample.timelineKey)" /></span>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <p class="timing-empty">No P2P timing samples found.</p>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
