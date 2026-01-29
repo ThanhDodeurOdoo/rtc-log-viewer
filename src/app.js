@@ -12,6 +12,7 @@ const TEMPLATE_FILES = [
     "./components/snapshot_filters/snapshot_filters.xml",
     "./components/main_view/main_view.xml",
     "./components/analysis_view/analysis_view.xml",
+    "./components/timing_view/timing_view.xml",
     "./components/timeline_viewer/timeline_viewer.xml",
     "./components/timeline_entry/timeline_entry.xml",
     "./components/snapshot_viewer/snapshot_viewer.xml",
