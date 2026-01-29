@@ -2,7 +2,7 @@
     <t t-name="MainView">
         <div class="main-view">
             <AnalysisView t-if="this.props.activeView() === 'analysis'" />
-            <TimingView t-if="this.props.activeView() === 'timing'" />
+            <StatsView t-if="this.props.activeView() === 'stats'" />
             <TimelineViewer t-if="this.props.activeView() === 'timelines'" />
             <div t-if="this.props.activeView() === 'snapshots'" class="snapshots-container">
                 <h3>Connection Snapshots</h3>

@@ -1,0 +1,205 @@
+<templates>
+    <t t-name="StatsView">
+        <div class="stats-view">
+            <h3>Stats</h3>
+            <p class="view-description">
+                Aggregated metrics across timelines and sessions, derived from RTC log events.
+            </p>
+            <NoData t-if="!this.hasLogData()" message="'No log data available for stats'" />
+            <div t-else="" class="stats-content">
+                <div t-if="this.isAnalyzing()" class="loading-analysis">
+                    <p>Analyzing stats...</p>
+                </div>
+                <div t-else="" class="stats-panels">
+                    <div class="stats-card">
+                        <h4>Overview</h4>
+                        <div class="stats-grid">
+                            <div class="stats-metric">
+                                <span class="metric-label">Timelines</span>
+                                <span class="metric-value" t-out="this.statsData().totals.timelines" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">Session Entries</span>
+                                <span class="metric-value" t-out="this.statsData().totals.sessionEntries" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">SFU Attempts</span>
+                                <span class="metric-value" t-out="this.statsData().success.sfu.attempted" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">P2P Attempts (eligible)</span>
+                                <span class="metric-value" t-out="this.statsData().success.p2p.attempted" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">P2P Sessions Excluded (SFU preferred)</span>
+                                <span class="metric-value" t-out="this.statsData().success.p2pExcluded" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <h4>Connection Success Rate</h4>
+                        <div class="stats-grid">
+                            <div class="stats-metric">
+                                <span class="metric-label">SFU Success</span>
+                                <span class="metric-value">
+                                    <t t-out="this.statsData().success.sfu.connected" />
+                                    / <t t-out="this.statsData().success.sfu.attempted" />
+                                    (<t t-out="this.statsData().success.sfu.rate" />)
+                                </span>
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">P2P Success (eligible)</span>
+                                <span class="metric-value">
+                                    <t t-out="this.statsData().success.p2p.connected" />
+                                    / <t t-out="this.statsData().success.p2p.attempted" />
+                                    (<t t-out="this.statsData().success.p2p.rate" />)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <h4>Timing Summary</h4>
+                        <div t-if="!this.statsData().timing.sfu &amp;&amp; !this.statsData().timing.p2p" class="stats-empty">
+                            No connection timing samples available.
+                        </div>
+                        <div t-else="" class="stats-grid">
+                            <div class="stats-metric">
+                                <span class="metric-label">SFU Connect Avg</span>
+                                <span class="metric-value" t-out="this.statsData().timing.sfu ? this.helpers.formatDuration(this.statsData().timing.sfu.stats.avgMs) : 'n/a'" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">SFU Connect Best/Worst</span>
+                                <span class="metric-value">
+                                    <t t-out="this.statsData().timing.sfu ? this.helpers.formatDuration(this.statsData().timing.sfu.stats.minMs) : 'n/a'" />
+                                    / <t t-out="this.statsData().timing.sfu ? this.helpers.formatDuration(this.statsData().timing.sfu.stats.maxMs) : 'n/a'" />
+                                </span>
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">SFU Connect Median/P95</span>
+                                <span class="metric-value">
+                                    <t t-out="this.statsData().timing.sfu ? this.helpers.formatDuration(this.statsData().timing.sfu.stats.medianMs) : 'n/a'" />
+                                    / <t t-out="this.statsData().timing.sfu ? this.helpers.formatDuration(this.statsData().timing.sfu.stats.p95Ms) : 'n/a'" />
+                                </span>
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">P2P Connect Avg</span>
+                                <span class="metric-value" t-out="this.statsData().timing.p2p ? this.helpers.formatDuration(this.statsData().timing.p2p.stats.avgMs) : 'n/a'" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">P2P Connect Best/Worst</span>
+                                <span class="metric-value">
+                                    <t t-out="this.statsData().timing.p2p ? this.helpers.formatDuration(this.statsData().timing.p2p.stats.minMs) : 'n/a'" />
+                                    / <t t-out="this.statsData().timing.p2p ? this.helpers.formatDuration(this.statsData().timing.p2p.stats.maxMs) : 'n/a'" />
+                                </span>
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">P2P Connect Median/P95</span>
+                                <span class="metric-value">
+                                    <t t-out="this.statsData().timing.p2p ? this.helpers.formatDuration(this.statsData().timing.p2p.stats.medianMs) : 'n/a'" />
+                                    / <t t-out="this.statsData().timing.p2p ? this.helpers.formatDuration(this.statsData().timing.p2p.stats.p95Ms) : 'n/a'" />
+                                </span>
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">SFU Time to First Track</span>
+                                <span class="metric-value" t-out="this.statsData().timing.sfuFirstTrack ? this.helpers.formatDuration(this.statsData().timing.sfuFirstTrack.stats.avgMs) : 'n/a'" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">P2P Time to First Track</span>
+                                <span class="metric-value" t-out="this.statsData().timing.p2pFirstTrack ? this.helpers.formatDuration(this.statsData().timing.p2pFirstTrack.stats.avgMs) : 'n/a'" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <h4>Event Counters</h4>
+                        <div class="stats-grid">
+                            <div class="stats-metric">
+                                <span class="metric-label">Recovery Attempts</span>
+                                <span class="metric-value" t-out="this.statsData().events.recoveryAttempts" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">Recovery Candidates</span>
+                                <span class="metric-value" t-out="this.statsData().events.recoveryCandidates" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">Missing Peer ICE</span>
+                                <span class="metric-value" t-out="this.statsData().events.missingPeerIce" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">SFU Load Failures</span>
+                                <span class="metric-value" t-out="this.statsData().events.sfuLoadFailures" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">SFU Timeouts</span>
+                                <span class="metric-value" t-out="this.statsData().events.sfuTimeouts" />
+                            </div>
+                            <div class="stats-metric">
+                                <span class="metric-label">Tracks Received</span>
+                                <span class="metric-value" t-out="this.statsData().events.trackReceived" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <h4>Timing Samples</h4>
+                        <div t-if="!this.statsData().timing.sfu &amp;&amp; !this.statsData().timing.p2p" class="stats-empty">
+                            No timing samples available.
+                        </div>
+                        <div t-else="" class="stats-samples">
+                            <div class="stats-samples-column">
+                                <h5>SFU Fastest</h5>
+                                <ul class="stats-sample-list">
+                                    <li t-foreach="this.statsData().timing.sfu ? this.statsData().timing.sfu.fastest : []" t-as="sample" t-key="sample_index" class="stats-sample-item">
+                                        <span class="sample-duration" t-out="this.helpers.formatDuration(sample.durationMs)" />
+                                        <span class="sample-meta">
+                                            <span t-if="sample.sessionId">Session <t t-out="sample.sessionId" /></span>
+                                            <span class="sample-separator">|</span>
+                                            <span>Timeline <t t-out="this.helpers.formatTime(sample.timelineKey)" /></span>
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="stats-samples-column">
+                                <h5>SFU Slowest</h5>
+                                <ul class="stats-sample-list">
+                                    <li t-foreach="this.statsData().timing.sfu ? this.statsData().timing.sfu.slowest : []" t-as="sample" t-key="sample_index" class="stats-sample-item">
+                                        <span class="sample-duration" t-out="this.helpers.formatDuration(sample.durationMs)" />
+                                        <span class="sample-meta">
+                                            <span t-if="sample.sessionId">Session <t t-out="sample.sessionId" /></span>
+                                            <span class="sample-separator">|</span>
+                                            <span>Timeline <t t-out="this.helpers.formatTime(sample.timelineKey)" /></span>
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="stats-samples-column">
+                                <h5>P2P Fastest</h5>
+                                <ul class="stats-sample-list">
+                                    <li t-foreach="this.statsData().timing.p2p ? this.statsData().timing.p2p.fastest : []" t-as="sample" t-key="sample_index" class="stats-sample-item">
+                                        <span class="sample-duration" t-out="this.helpers.formatDuration(sample.durationMs)" />
+                                        <span class="sample-meta">
+                                            <span t-if="sample.sessionId">Session <t t-out="sample.sessionId" /></span>
+                                            <span class="sample-separator">|</span>
+                                            <span>Timeline <t t-out="this.helpers.formatTime(sample.timelineKey)" /></span>
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="stats-samples-column">
+                                <h5>P2P Slowest</h5>
+                                <ul class="stats-sample-list">
+                                    <li t-foreach="this.statsData().timing.p2p ? this.statsData().timing.p2p.slowest : []" t-as="sample" t-key="sample_index" class="stats-sample-item">
+                                        <span class="sample-duration" t-out="this.helpers.formatDuration(sample.durationMs)" />
+                                        <span class="sample-meta">
+                                            <span t-if="sample.sessionId">Session <t t-out="sample.sessionId" /></span>
+                                            <span class="sample-separator">|</span>
+                                            <span>Timeline <t t-out="this.helpers.formatTime(sample.timelineKey)" /></span>
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
