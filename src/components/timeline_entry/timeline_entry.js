@@ -1,8 +1,9 @@
-const { Component, xml, signal, computed, plugin, props, types } = owl;
-import helpers from "./utils/helpers.js";
-import { ConnectionState, EventList } from "./common/ui_components.js";
-import { ZoomControl } from "./zoom_control.js";
-import { LogPlugin } from "./plugins/log_plugin.js";
+const { Component, signal, computed, plugin, props, types } = owl;
+import helpers from "../../utils/helpers.js";
+import { ConnectionState } from "../connection_state/connection_state.js";
+import { EventList } from "../event_list/event_list.js";
+import { ZoomControl } from "../zoom_control/zoom_control.js";
+import { LogPlugin } from "../../plugins/log_plugin.js";
 
 const CONSTANTS = {
     // Thresholds for event clustering
@@ -32,145 +33,7 @@ const LOG_LEVEL_CLASSES = {
 const ERROR_KEYWORDS = ["error", "failed", "failure", "attempting to recover"];
 
 export class TimelineEntry extends Component {
-    static template = xml`
-        <div class="timeline-entry" t-ref="this.rootRef">
-            <div class="timeline-header" t-on-click="() => this.expanded.set(!this.expanded())">
-                <h4 t-out="this.timelineTitle()"></h4>
-                <button
-                    t-attf-class="timeline-toggle {{ this.expanded() ? 'expanded' : 'collapsed' }}"
-                    t-on-click.stop="() => this.expanded.set(!this.expanded())"
-                >
-                    <t t-out="this.expanded() ? '▼' : '►'" />
-                </button>
-            </div>
-            <div t-if="this.expanded()" class="timeline-content">
-                <!-- Interactive zoom navigator -->
-                <ZoomControl
-                    events="this.allEventsMinimal"
-                    onZoomChange="this.handleZoomChange"
-                    totalDuration="this.timelineTotalDuration"
-                />
-
-                <!-- All sessions displayed as rows -->
-                <div class="timeline-sessions">
-                    <div
-                        t-foreach="this.sortedSessionIds()"
-                        t-as="sessionId"
-                        t-key="sessionId"
-                        t-attf-class="session-row {{ this.isSessionSelf(sessionId) ? 'self-session' : '' }}"
-                        t-att-data-session-id="sessionId"
-                    >
-                        <div class="session-row-header" t-on-click="() => this.toggleSessionDetails(sessionId)">
-                            <div class="session-title">
-                                <div t-attf-class="state-indicator {{ this.helpers.getConnectionStateClass(this.getSessionLastState(sessionId)) }}"></div>
-                                Session <t t-out="sessionId"/>
-                                <span t-if="this.isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
-                            </div>
-                            <button
-                                t-attf-class="session-toggle {{ this.expandedSessions()[sessionId] ? 'expanded' : 'collapsed' }}"
-                                t-on-click.stop="() => this.toggleSessionDetails(sessionId)"
-                            >
-                                <t t-out="this.expandedSessions()[sessionId] ? '▼' : '►'" />
-                            </button>
-                        </div>
-
-                        <!-- Visual Timeline for this session -->
-                        <div class="visual-timeline-container">
-                            <div class="visual-timeline">
-                                <!-- Connection state segments -->
-                                <t t-foreach="this.getVisibleConnectionStateSegments(sessionId)" t-as="segment" t-key="segment_index">
-                                    <div
-                                        t-attf-class="timeline-segment {{ this.helpers.getConnectionStateClass(segment.state) }} {{ segment.state === undefined ? 'undefined-state' : '' }}"
-                                        t-attf-style="left: {{ segment.startPos }}%; width: {{ segment.width }}%;"
-                                        t-att-title="segment.state || 'Not connected to SFU'"
-                                    ></div>
-                                </t>
-                                
-                                <!-- Event groups (clustered events) -->
-                                <t t-foreach="this.getEventGroups(sessionId)" t-as="group" t-key="group_index">
-                                    <div
-                                        class="event-group"
-                                        t-att-id="'event-group-' + sessionId + '-' + group_index"
-                                        t-attf-style="left: {{ this.getGroupPosition(group) }}%;"
-                                        t-on-click.stop="(e) => this.toggleEventGroupPopup(group, e, sessionId, group_index)"
-                                    >
-                                        <!-- Single event or group indicator -->
-                                        <div
-                                            t-if="group.length === 1"
-                                            t-attf-class="timeline-event {{ group[0].level || this.LOG_LEVEL_CLASSES.INFO }}"
-                                            t-on-click.stop="(e) => { this.highlightEvent(sessionId, group[0].index); }"
-                                            t-on-mouseenter="(e) => this.showTooltip(group[0], e)"
-                                            t-on-mouseleave="this.hideTooltip"
-                                        ></div>
-                                        <div
-                                            t-else=""
-                                            class="event-cluster"
-                                            t-out="group.length"
-                                        ></div>
-                                    </div>
-                                </t>
-                            </div>
-                        </div>
-
-                        <!-- Session details (collapsible) -->
-                        <div t-if="this.expandedSessions()[sessionId]" class="session-details">
-                            <!-- Connection step -->
-                            <div t-if="this.getSessionInfo(sessionId).step" class="connection-step">
-                                <span class="property-name">Connection Step:</span>
-                                <span class="step-value" t-out="this.getSessionInfo(sessionId).step"></span>
-                            </div>
-                            <!-- Events log -->
-                            <div class="events-log">
-                                <h5>Events</h5>
-                                <EventList
-                                    events="this.getSessionEvents(sessionId)"
-                                    noDataMessage="'No events recorded for this session'"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Floating tooltip -->
-                <div t-if="this.activeTooltip()" class="event-tooltip" t-att-style="this.tooltipStyle()">
-                    <div class="tooltip-time" t-out="this.activeTooltip().time"></div>
-                    <div t-if="this.activeTooltip().level" t-attf-class="tooltip-level {{ this.activeTooltip().level }}" t-out="this.activeTooltip().level"></div>
-                    <div class="tooltip-text" t-out="this.activeTooltip().text"></div>
-                </div>
-                
-                <div class="timeline-times">
-                    <div class="timeline-start-time" t-out="this.formatTimelineTime(this.visibleTimeRange().visibleStartTime)"></div>
-                    <div class="timeline-end-time" t-out="this.formatTimelineTime(this.visibleTimeRange().visibleEndTime)"></div>
-                </div>
-            </div>
-            
-            <!-- Sticky event popup (shown when clicking on a group) -->
-            <div t-if="this.activeEventGroup()" class="sticky-event-popup" t-att-style="this.eventGroupPopupStyle()">
-                <div class="sticky-popup-header">
-                    <h4>Events (<t t-out="this.activeEventGroup().length" />)</h4>
-                    <button class="popup-close-btn" t-on-click="this.closeEventPopup">×</button>
-                </div>
-                <div class="sticky-popup-content">
-                    <div
-                        t-foreach="this.activeEventGroup()"
-                        t-as="event"
-                        t-key="event.index"
-                        t-attf-class="popup-event"
-                        t-on-click="() => this.highlightEvent(this.activeEventSessionId(), event.index)"
-                    >
-                        <div t-attf-class="event-indicator {{ event.level || this.LOG_LEVEL_CLASSES.INFO }}"></div>
-                        <div class="event-content">
-                            <span class="event-time" t-out="this.helpers.formatEventTime(event.original)"></span>
-                            <span class="event-text" t-out="this.helpers.formatEventText(event.original)"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Overlay for clicking outside popup -->
-            <div t-if="this.activeEventGroup()" class="popup-overlay" t-on-click="this.closeEventPopup"></div>
-        </div>
-    `;
+    static template = "TimelineEntry";
 
     static components = {
         ConnectionState,

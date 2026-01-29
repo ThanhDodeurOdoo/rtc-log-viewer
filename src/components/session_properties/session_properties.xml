@@ -1,0 +1,70 @@
+<templates>
+    <t t-name="SessionProperties">
+        <div class="session-properties">
+            <div t-if="this.props.session.audio" class="property-card">
+                <h6>Audio</h6>
+                <ul class="property-list">
+                    <li>
+                        <span class="property-name">State:</span>
+                        <span t-out="this.helpers.getAudioState(this.props.session.audio.state)" />
+                    </li>
+                    <li>
+                        <span class="property-name">Muted:</span>
+                        <span t-out="this.props.session.audio.muted ? 'Yes' : 'No'" />
+                    </li>
+                    <li>
+                        <span class="property-name">Paused:</span>
+                        <span t-out="this.props.session.audio.paused ? 'Yes' : 'No'" />
+                    </li>
+                    <li t-if="this.props.session.audio.networkState !== undefined">
+                        <span class="property-name">Network State:</span>
+                        <span t-out="this.helpers.getNetworkState(this.props.session.audio.networkState)" />
+                    </li>
+                </ul>
+            </div>
+            <div t-if="this.props.session.peer" class="property-card">
+                <h6>Peer Connection</h6>
+                <ul class="property-list">
+                    <li>
+                        <span class="property-name">ID:</span>
+                        <span t-out="this.props.session.peer.id" />
+                    </li>
+                    <li>
+                        <span class="property-name">State:</span>
+                        <span t-out="this.props.session.peer.state" />
+                    </li>
+                    <li>
+                        <span class="property-name">ICE State:</span>
+                        <span t-out="this.props.session.peer.iceState" />
+                    </li>
+                </ul>
+            </div>
+            <div t-if="this.props.session.sfuConsumers and this.props.session.sfuConsumers.length &gt; 0" class="property-card">
+                <h6>SFU Consumers</h6>
+                <ul class="property-list">
+                    <li t-foreach="this.props.session.sfuConsumers" t-as="consumer" t-key="consumer_index">
+                        <span class="property-name" t-out="consumer.type" />:
+                        <span t-out="consumer.state" />
+                    </li>
+                </ul>
+            </div>
+            <div class="property-card">
+                <h6>Other Properties</h6>
+                <ul class="property-list">
+                    <li t-if="this.props.session.channelMemberId !== undefined">
+                        <span class="property-name">Channel Member ID:</span>
+                        <span t-out="this.props.session.channelMemberId" />
+                    </li>
+                    <li t-if="this.props.session.audioError">
+                        <span class="property-name">Audio Error:</span>
+                        <span t-out="this.props.session.audioError" />
+                    </li>
+                    <li t-if="this.props.session.videoError">
+                        <span class="property-name">Video Error:</span>
+                        <span t-out="this.props.session.videoError" />
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </t>
+</templates>

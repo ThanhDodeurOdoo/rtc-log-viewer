@@ -1,0 +1,77 @@
+<templates>
+    <t t-name="TimelineEntry">
+        <div class="timeline-entry" t-ref="this.rootRef">
+            <div class="timeline-header" t-on-click="() =&gt; this.expanded.set(!this.expanded())">
+                <h4 t-out="this.timelineTitle()" />
+                <button t-attf-class="timeline-toggle {{ this.expanded() ? 'expanded' : 'collapsed' }}" t-on-click.stop="() =&gt; this.expanded.set(!this.expanded())">
+                    <t t-out="this.expanded() ? '▼' : '►'" />
+                </button>
+            </div>
+            <div t-if="this.expanded()" class="timeline-content">
+                <ZoomControl events="this.allEventsMinimal" onZoomChange="this.handleZoomChange" totalDuration="this.timelineTotalDuration" />
+                <div class="timeline-sessions">
+                    <div t-foreach="this.sortedSessionIds()" t-as="sessionId" t-key="sessionId" t-attf-class="session-row {{ this.isSessionSelf(sessionId) ? 'self-session' : '' }}" t-att-data-session-id="sessionId">
+                        <div class="session-row-header" t-on-click="() =&gt; this.toggleSessionDetails(sessionId)">
+                            <div class="session-title">
+                                <div t-attf-class="state-indicator {{ this.helpers.getConnectionStateClass(this.getSessionLastState(sessionId)) }}" />
+                                Session <t t-out="sessionId" />
+                                <span t-if="this.isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
+                            </div>
+                            <button t-attf-class="session-toggle {{ this.expandedSessions()[sessionId] ? 'expanded' : 'collapsed' }}" t-on-click.stop="() =&gt; this.toggleSessionDetails(sessionId)">
+                                <t t-out="this.expandedSessions()[sessionId] ? '▼' : '►'" />
+                            </button>
+                        </div>
+                        <div class="visual-timeline-container">
+                            <div class="visual-timeline">
+                                <t t-foreach="this.getVisibleConnectionStateSegments(sessionId)" t-as="segment" t-key="segment_index">
+                                    <div t-attf-class="timeline-segment {{ this.helpers.getConnectionStateClass(segment.state) }} {{ segment.state === undefined ? 'undefined-state' : '' }}" t-attf-style="left: {{ segment.startPos }}%; width: {{ segment.width }}%;" t-att-title="segment.state || 'Not connected to SFU'" />
+                                </t>
+                                <t t-foreach="this.getEventGroups(sessionId)" t-as="group" t-key="group_index">
+                                    <div class="event-group" t-att-id="'event-group-' + sessionId + '-' + group_index" t-attf-style="left: {{ this.getGroupPosition(group) }}%;" t-on-click.stop="(e) =&gt; this.toggleEventGroupPopup(group, e, sessionId, group_index)">
+                                        <div t-if="group.length === 1" t-attf-class="timeline-event {{ group[0].level || this.LOG_LEVEL_CLASSES.INFO }}" t-on-click.stop="(e) =&gt; { this.highlightEvent(sessionId, group[0].index); }" t-on-mouseenter="(e) =&gt; this.showTooltip(group[0], e)" t-on-mouseleave="this.hideTooltip" />
+                                        <div t-else="" class="event-cluster" t-out="group.length" />
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                        <div t-if="this.expandedSessions()[sessionId]" class="session-details">
+                            <div t-if="this.getSessionInfo(sessionId).step" class="connection-step">
+                                <span class="property-name">Connection Step:</span>
+                                <span class="step-value" t-out="this.getSessionInfo(sessionId).step" />
+                            </div>
+                            <div class="events-log">
+                                <h5>Events</h5>
+                                <EventList events="this.getSessionEvents(sessionId)" noDataMessage="'No events recorded for this session'" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div t-if="this.activeTooltip()" class="event-tooltip" t-att-style="this.tooltipStyle()">
+                    <div class="tooltip-time" t-out="this.activeTooltip().time" />
+                    <div t-if="this.activeTooltip().level" t-attf-class="tooltip-level {{ this.activeTooltip().level }}" t-out="this.activeTooltip().level" />
+                    <div class="tooltip-text" t-out="this.activeTooltip().text" />
+                </div>
+                <div class="timeline-times">
+                    <div class="timeline-start-time" t-out="this.formatTimelineTime(this.visibleTimeRange().visibleStartTime)" />
+                    <div class="timeline-end-time" t-out="this.formatTimelineTime(this.visibleTimeRange().visibleEndTime)" />
+                </div>
+            </div>
+            <div t-if="this.activeEventGroup()" class="sticky-event-popup" t-att-style="this.eventGroupPopupStyle()">
+                <div class="sticky-popup-header">
+                    <h4>Events (<t t-out="this.activeEventGroup().length" />)</h4>
+                    <button class="popup-close-btn" t-on-click="this.closeEventPopup">×</button>
+                </div>
+                <div class="sticky-popup-content">
+                    <div t-foreach="this.activeEventGroup()" t-as="event" t-key="event.index" t-attf-class="popup-event" t-on-click="() =&gt; this.highlightEvent(this.activeEventSessionId(), event.index)">
+                        <div t-attf-class="event-indicator {{ event.level || this.LOG_LEVEL_CLASSES.INFO }}" />
+                        <div class="event-content">
+                            <span class="event-time" t-out="this.helpers.formatEventTime(event.original)" />
+                            <span class="event-text" t-out="this.helpers.formatEventText(event.original)" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div t-if="this.activeEventGroup()" class="popup-overlay" t-on-click="this.closeEventPopup" />
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,7 @@
+<templates>
+    <t t-name="NoData">
+        <div class="no-data">
+            <t t-out="this.props.message || 'No data available'" />
+        </div>
+    </t>
+</templates>

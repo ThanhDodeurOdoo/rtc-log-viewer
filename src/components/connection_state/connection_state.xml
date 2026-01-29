@@ -1,0 +1,11 @@
+<templates>
+    <t t-name="ConnectionState">
+        <div class="connection-state">
+            <div t-attf-class="state-indicator {{ this.props.stateClass }}" />
+            <span class="property-name">
+                <t t-out="this.props.label || 'State:'" />
+            </span>
+            <span class="property-value" t-out="this.props.state || 'Unknown'" />
+        </div>
+    </t>
+</templates>

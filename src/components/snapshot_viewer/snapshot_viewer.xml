@@ -1,0 +1,72 @@
+<templates>
+    <t t-name="SnapshotViewer">
+        <div class="snapshot-viewer">
+            <div class="snapshot-header" t-on-click="() =&gt; this.expanded.set(!this.expanded())">
+                <h4 t-out="this.snapshotTitle()" />
+                <button t-attf-class="snapshot-toggle {{ this.expanded() ? 'expanded' : 'collapsed' }}" t-on-click.stop="() =&gt; this.expanded.set(!this.expanded())">
+                    <t t-out="this.expanded() ? '▼' : '►'" />
+                </button>
+            </div>
+            <div t-if="this.expanded()" class="snapshot-content">
+                <div class="connection-overview">
+                    <div class="connection-summary">
+                        <div class="connection-type">
+                            <span class="property-name">Connection Type:</span>
+                            <span class="property-value" t-out="this.snapshotData().connectionType || 'Unknown'" />
+                        </div>
+                        <div t-if="this.snapshotData().fallback !== undefined" class="fallback-mode">
+                            <span class="property-name">Fallback Mode:</span>
+                            <span class="property-value" t-out="this.snapshotData().fallback ? 'Yes' : 'No'" />
+                        </div>
+                    </div>
+                    <div t-if="this.hasServerInfo()" class="server-info">
+                        <h5>Server Information</h5>
+                        <div class="server-properties">
+                            <div t-if="this.snapshotData().server.url" class="server-url">
+                                <span class="property-name">URL:</span>
+                                <span class="property-value" t-out="this.snapshotData().server.url" />
+                            </div>
+                            <div t-if="this.snapshotData().server.state" class="server-state">
+                                <span class="property-name">State:</span>
+                                <span class="property-value" t-out="this.snapshotData().server.state" />
+                            </div>
+                            <div t-if="this.hasServerErrors()" class="server-errors">
+                                <span class="property-name">Errors:</span>
+                                <ul class="error-list">
+                                    <li t-foreach="this.snapshotData().server.errors" t-as="error" t-key="error_index" class="error-item" t-out="error" />
+                                </ul>
+                            </div>
+                            <div t-if="this.snapshotData().server.info" class="server-info-data">
+                                <span class="property-name">Info:</span>
+                                <pre class="json-data" t-out="window.JSON.stringify(this.snapshotData().server.info, null, 2)" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sessions-list">
+                    <h5>Sessions</h5>
+                    <div t-if="!this.hasSessions()" class="no-data">
+                        No session data in this snapshot
+                    </div>
+                    <div t-else="" class="session-items">
+                        <div t-foreach="this.sessions()" t-as="session" t-key="session.id" class="session-item">
+                            <div class="session-header" t-on-click="() =&gt; this.toggleSession(session.id)">
+                                <h6>
+                                    Session ID: <span t-out="session.id" />
+                                    <span t-if="session.isSelf" class="self-indicator">(Self)</span>
+                                </h6>
+                                <button t-attf-class="session-toggle {{ this.expandedSessions()[session.id] ? 'expanded' : 'collapsed' }}" t-on-click.stop="() =&gt; this.toggleSession(session.id)">
+                                    <t t-out="this.expandedSessions()[session.id] ? '▼' : '►'" />
+                                </button>
+                            </div>
+                            <div t-if="this.expandedSessions()[session.id]" class="session-detail">
+                                <ConnectionState state="session.state || 'Unknown'" stateClass="this.helpers.getSessionStateClass(session)" />
+                                <SessionProperties session="session" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

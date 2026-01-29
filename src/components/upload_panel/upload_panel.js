@@ -1,0 +1,66 @@
+const { Component, signal, plugin } = owl;
+import { LogPlugin } from "../../plugins/log_plugin.js";
+
+export class UploadPanel extends Component {
+    static template = "UploadPanel";
+
+    setup() {
+        this.log = plugin(LogPlugin);
+        this.fileInputRef = signal(null);
+        this.fileName = signal("");
+        this.isDragOver = signal(false);
+    }
+
+    triggerFileInput() {
+        this.fileInputRef()?.click();
+    }
+
+    onFileChange(event) {
+        const file = event.target.files[0];
+        this.processFile(file);
+    }
+
+    onDragOver() {
+        this.isDragOver.set(true);
+    }
+
+    onDragLeave() {
+        this.isDragOver.set(false);
+    }
+
+    onFileDrop(event) {
+        this.isDragOver.set(false);
+
+        const files = event.dataTransfer.files;
+        if (files.length === 0) {
+            return;
+        }
+
+        const file = files[0];
+        this.processFile(file);
+    }
+
+    processFile(file) {
+        if (!file) {
+            return;
+        }
+
+        if (!file.name.toLowerCase().endsWith(".json")) {
+            alert("Please upload a JSON file.");
+            return;
+        }
+
+        this.fileName.set(file.name);
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const logs = JSON.parse(e.target.result);
+                this.log.load(logs);
+            } catch {
+                alert("Error parsing the log file. Please ensure it is a valid JSON file.");
+            }
+        };
+        reader.readAsText(file);
+    }
+}

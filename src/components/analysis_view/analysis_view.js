@@ -1,7 +1,7 @@
-const { Component, xml, signal, useEffect, computed, plugin } = owl;
-import helpers from "./utils/helpers.js";
-import { NoData } from "./common/ui_components.js";
-import { LogPlugin } from "./plugins/log_plugin.js";
+const { Component, signal, useEffect, computed, plugin } = owl;
+import helpers from "../../utils/helpers.js";
+import { NoData } from "../no_data/no_data.js";
+import { LogPlugin } from "../../plugins/log_plugin.js";
 
 const ISSUE_TYPES = {
     ERROR: "error",
@@ -26,141 +26,7 @@ const ISSUE_CODES = {
 const RECOVERY_THRESHOLD = 3; // Number of recovery attempts that indicates a problem
 
 export class AnalysisView extends Component {
-    static template = xml`
-        <div class="analysis-view">
-            <h3>Connection Analysis [⚠️WORK IN PROGESS⚠️]</h3>
-            <p class="view-description">Automatic analysis of connection issues and potential problems.</p>
-            <NoData
-                t-if="!this.hasLogData()"
-                message="'No log data available for analysis'"
-            />
-            <div t-else="" class="analysis-content">
-                <div t-if="this.isAnalyzing()" class="loading-analysis">
-                    <p>Analyzing connection logs...</p>
-                </div>
-                
-                <div t-elif="this.groupedResults().length === 0" class="no-issues-found">
-                    <h4>No Issues Detected</h4>
-                    <p>The analysis did not find any significant connection problems in the logs.</p>
-                </div>
-                
-                <div t-else="" class="analysis-results">
-                    <h4>Analysis Results</h4>
-                    <div class="issue-list">
-                        <div
-                            t-foreach="this.groupedResults()"
-                            t-as="group"
-                            t-key="group_index"
-                            t-attf-class="issue-item {{ group.type }}"
-                        >
-                            <div class="issue-header" t-on-click="() => this.toggleIssueDetails(group_index)">
-                                <h5 class="issue-title">
-                                    <span t-attf-class="issue-icon {{ group.type }}"></span>
-                                    <span t-out="group.title"></span>
-                                    <span class="issue-count" t-if="group.count > 1">
-                                        (<t t-out="group.count"/> occurrences)
-                                    </span>
-                                </h5>
-                                
-                                <button
-                                    t-attf-class="issue-toggle {{ this.expandedIssues()[group_index] ? 'expanded' : 'collapsed' }}"
-                                    t-on-click.stop="() => this.toggleIssueDetails(group_index)"
-                                >
-                                    <t t-out="this.expandedIssues()[group_index] ? '▼' : '►'" />
-                                </button>
-                            </div>
-                            
-                            <div class="issue-description" t-out="group.description"></div>
-                            
-                            <div t-if="this.expandedIssues()[group_index]" class="issue-details">
-                                <div class="issue-recommendation">
-                                    <h6>Recommendation</h6>
-                                    <p t-out="this.getRecommendation(group)"></p>
-                                </div>
-
-                                <div t-if="group.count > 1" class="issue-instances">
-                                    <h6>Occurrences (<t t-out="group.count"/>)</h6>
-                                    
-                                    <div t-foreach="group.instances" t-as="instance" t-key="instance_index" class="issue-instance">
-                                        <div class="instance-header" t-on-click="() => this.toggleInstanceDetails(group_index, instance_index)">
-                                            <h6 class="instance-title">
-                                                <span t-if="instance.sessionId">Session <t t-out="instance.sessionId"/></span>
-                                                <span t-if="instance.timestamp" class="instance-source">
-                                                    - Snapshot <t t-out="this.helpers.formatTime(instance.timestamp)"/>
-                                                </span>
-                                                <span t-elif="instance.timelineKey" class="instance-source">
-                                                    - Timeline <t t-out="this.helpers.formatTime(instance.timelineKey)"/>
-                                                </span>
-                                            </h6>
-                                            
-                                            <button
-                                                t-attf-class="instance-toggle {{ this.expandedInstances()[group_index + '-' + instance_index] ? 'expanded' : 'collapsed' }}"
-                                                t-on-click.stop="() => this.toggleInstanceDetails(group_index, instance_index)"
-                                            >
-                                                <t t-out="this.expandedInstances()[group_index + '-' + instance_index] ? '▼' : '►'" />
-                                            </button>
-                                        </div>
-                                        
-                                        <div t-if="this.expandedInstances()[group_index + '-' + instance_index]" class="instance-details">
-                                            <div t-if="instance.timestamp" class="issue-metadata">
-                                                <span class="metadata-label">Detected at:</span>
-                                                <span class="metadata-value" t-out="this.helpers.formatTime(instance.timestamp)"></span>
-                                            </div>
-                                            
-                                            <div t-if="instance.sessionId" class="issue-metadata">
-                                                <span class="metadata-label">Session ID:</span>
-                                                <span class="metadata-value" t-out="instance.sessionId"></span>
-                                            </div>
-                                            
-                                            <div t-if="instance.details" class="issue-technical-details">
-                                                <h6>Technical Details</h6>
-                                                <pre t-out="window.JSON.stringify(instance.details, null, 2)"></pre>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div t-else="" class="single-issue-details">
-                                    <div class="issue-metadata">
-                                        <span class="metadata-label">Source:</span>
-                                        <span class="metadata-value source-indicator">
-                                            <span t-if="group.timestamp" class="source-tag snapshot-source">
-                                                Snapshot <t t-out="this.helpers.formatTime(group.timestamp)"/>
-                                            </span>
-                                            <span t-elif="group.timelineKey" class="source-tag timeline-source">
-                                                Timeline <t t-out="this.helpers.formatTime(group.timelineKey)"/>
-                                            </span>
-                                            <span t-else="" class="source-tag unknown-source">
-                                                Unknown source
-                                            </span>
-                                        </span>
-                                    </div>
-                                    
-                                    <div t-if="group.sessionId" class="issue-metadata">
-                                        <span class="metadata-label">Session ID:</span>
-                                        <span class="metadata-value" t-out="group.sessionId"></span>
-                                    </div>
-                                    
-                                    <div t-if="group.details" class="issue-technical-details">
-                                        <h6>Technical Details</h6>
-                                        <pre t-out="window.JSON.stringify(group.details, null, 2)"></pre>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="useful-links">
-                <h4>Useful Resources</h4>
-                <ul>
-                    <li><a href="https://www.odoo.com/knowledge/article/28832" target="_blank" rel="noopener noreferrer">Odoo RTC Configuration Documentation</a></li>
-                    <li><a href="https://www.odoo.com/knowledge/article/28833" target="_blank" rel="noopener noreferrer">Odoo RTC Troubleshooting Documentation</a></li>
-                </ul>
-            </div>
-        </div>
-    `;
+    static template = "AnalysisView";
 
     static components = { NoData };
     setup() {

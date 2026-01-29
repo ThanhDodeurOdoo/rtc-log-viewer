@@ -1,0 +1,29 @@
+<templates>
+    <t t-name="TimelineFilters">
+        <div t-if="this.log.timelineKeys().length &gt; 0" class="filter-section">
+            <div class="filter-header" t-on-click="this.toggle">
+                <h4>Timelines</h4>
+                <span class="filter-count">
+                    (<t t-out="this.log.selectedTimelines().size" /> / <t t-out="this.log.timelineKeys().length" />)
+                </span>
+                <button t-attf-class="filter-toggle {{ this.isOpen() ? 'expanded' : 'collapsed' }}" t-on-click.stop="this.toggle">
+                    <t t-out="this.isOpen() ? '▼' : '►'" />
+                </button>
+            </div>
+            <div t-if="this.isOpen()" class="filter-content">
+                <div class="filter-actions">
+                    <button class="filter-action-btn" t-on-click="() =&gt; this.toggleAll(true)">Select All</button>
+                    <button class="filter-action-btn" t-on-click="() =&gt; this.toggleAll(false)">Deselect All</button>
+                </div>
+                <div class="filter-items">
+                    <div t-foreach="this.log.timelineKeys()" t-as="timelineKey" t-key="timelineKey" class="filter-item" t-att-title="this.log.formatTimelineLabel(timelineKey)">
+                        <label class="checkbox-label">
+                            <input type="checkbox" t-model="this.timelineModel(timelineKey)" />
+                            <span class="timeline-label" t-out="this.log.formatTimelineLabel(timelineKey)" />
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
