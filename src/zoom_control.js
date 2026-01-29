@@ -1,4 +1,4 @@
-const { Component, xml, useState } = owl;
+const { Component, xml, proxy, computed, props, types } = owl;
 import helpers from "./utils/helpers.js";
 
 const ZOOM = {
@@ -24,11 +24,11 @@ export class ZoomControl extends Component {
     static template = xml`
         <div class="zoom-navigator">
             <div class="zoom-overview">
-                <div class="zoom-overview-bar" t-on-mousedown="onBarClick">
+                <div class="zoom-overview-bar" t-on-mousedown="this.onBarClick">
                     <!-- Timeline with event markers -->
                     <div class="zoom-overview-timeline">
                         <div
-                            t-foreach="props.events"
+                            t-foreach="this.props.events()"
                             t-as="event"
                             t-key="event.id"
                             t-attf-class="zoom-overview-event {{ event.level || 'info' }}"
@@ -39,16 +39,16 @@ export class ZoomControl extends Component {
                     <!-- Zoom selector with handles -->
                     <div
                         class="zoom-selector"
-                        t-attf-style="left: {{ state.zoomStartPercent }}%; width: {{ zoomWidthPercent }}%;"
-                        t-on-mousedown="onSelectorMouseDown"
+                        t-attf-style="left: {{ this.state.zoomStartPercent }}%; width: {{ this.zoomWidthPercent() }}%;"
+                        t-on-mousedown="this.onSelectorMouseDown"
                     >
                         <div
                             class="zoom-handle zoom-handle-left"
-                            t-on-mousedown.stop="startLeftHandleDrag"
+                            t-on-mousedown.stop="this.startLeftHandleDrag"
                         ></div>
                         <div
                             class="zoom-handle zoom-handle-right"
-                            t-on-mousedown.stop="startRightHandleDrag"
+                            t-on-mousedown.stop="this.startRightHandleDrag"
                         ></div>
                     </div>
                 </div>
@@ -57,42 +57,63 @@ export class ZoomControl extends Component {
             <div class="zoom-controls">
                 <button
                     class="zoom-control-btn"
-                    t-on-click="slideLeft"
-                    t-att-disabled="cannotSlideLeft"
+                    t-on-click="this.slideLeft"
+                    t-att-disabled="this.cannotSlideLeft()"
                     title="Slide left"
                 >←</button>
                 <button
                     class="zoom-control-btn"
-                    t-att-disabled="isLowZoom"
-                    t-on-click="resetZoom"
+                    t-att-disabled="this.isLowZoom()"
+                    t-on-click="this.resetZoom"
                 >Reset Zoom</button>
                 <button
                     class="zoom-control-btn"
-                    t-on-click="zoomOut"
-                    t-att-disabled="isLowZoom"
+                    t-on-click="this.zoomOut"
+                    t-att-disabled="this.isLowZoom()"
                 >-</button>
                 <button
                     class="zoom-control-btn"
-                    t-on-click="zoomIn"
+                    t-on-click="this.zoomIn"
                 >+</button>
                 <button
                     class="zoom-control-btn"
-                    t-on-click="slideRight"
-                    t-att-disabled="cannotSlideRight"
+                    t-on-click="this.slideRight"
+                    t-att-disabled="this.cannotSlideRight()"
                     title="Slide right"
                 >→</button>
             </div>
 
-            <div t-if="props.totalDuration" class="zoom-duration">
-                Visible timespan: <span t-esc="helpers.formatDuration(getVisibleDuration())"></span>
+            <div t-if="this.props.totalDuration()" class="zoom-duration">
+                Visible timespan: <span t-out="this.helpers.formatDuration(this.visibleDuration())"></span>
             </div>
         </div>
     `;
 
+    props = props({
+        events: types.reactiveValue(),
+        totalDuration: types.reactiveValue(),
+        onZoomChange: types.function(),
+    });
+
     setup() {
-        this.state = useState({
+        this.state = proxy({
             zoomLevel: 1, // Start with no zoom
             zoomStartPercent: 0, // Start at the beginning of the timeline
+        });
+
+        this.isLowZoom = computed(() => this.state.zoomLevel <= 1);
+        this.zoomWidthPercent = computed(() => Math.min(100, 100 / this.state.zoomLevel));
+        this.cannotSlideLeft = computed(() => this.state.zoomStartPercent <= 0);
+        this.cannotSlideRight = computed(() => {
+            const maxStart = 100 - this.zoomWidthPercent();
+            return this.state.zoomStartPercent >= maxStart;
+        });
+        this.visibleDuration = computed(() => {
+            const totalDuration = this.props.totalDuration();
+            if (!totalDuration) {
+                return 0;
+            }
+            return totalDuration / this.state.zoomLevel;
         });
 
         // Bind methods
@@ -107,33 +128,6 @@ export class ZoomControl extends Component {
         this.helpers = helpers;
     }
 
-    get isLowZoom() {
-        return this.state.zoomLevel <= 1;
-    }
-
-    get zoomWidthPercent() {
-        return Math.min(100, 100 / this.state.zoomLevel);
-    }
-
-    get cannotSlideLeft() {
-        return this.state.zoomStartPercent <= 0;
-    }
-
-    get cannotSlideRight() {
-        const maxStart = 100 - this.zoomWidthPercent;
-        return this.state.zoomStartPercent >= maxStart;
-    }
-
-    /**
-     * @returns {number} Duration of the visible range in ms
-     */
-    getVisibleDuration() {
-        if (!this.props.totalDuration) {
-            return 0;
-        }
-        return this.props.totalDuration / this.state.zoomLevel;
-    }
-
     onBarClick(ev) {
         if (ev.target.closest(SELECTORS.ZOOM_SELECTOR)) {
             return;
@@ -144,11 +138,11 @@ export class ZoomControl extends Component {
         const clickPercent = clickPosition * 100;
 
         // Center the zoom window at the click position
-        const halfWidth = this.zoomWidthPercent / 2;
+        const halfWidth = this.zoomWidthPercent() / 2;
         let newStart = clickPercent - halfWidth;
 
         // Ensure it stays within bounds
-        newStart = Math.max(0, Math.min(100 - this.zoomWidthPercent, newStart));
+        newStart = Math.max(0, Math.min(100 - this.zoomWidthPercent(), newStart));
 
         this.state.zoomStartPercent = newStart;
         this.notifyZoomChange();
@@ -315,7 +309,7 @@ export class ZoomControl extends Component {
     }
 
     zoomIn() {
-        const oldWidth = this.zoomWidthPercent;
+        const oldWidth = this.zoomWidthPercent();
         const newLevel = this.state.zoomLevel * ZOOM.ZOOM_IN_FACTOR;
         const newWidth = 100 / newLevel;
 
@@ -335,7 +329,7 @@ export class ZoomControl extends Component {
             return;
         }
 
-        const oldWidth = this.zoomWidthPercent;
+        const oldWidth = this.zoomWidthPercent();
         const newLevel = Math.max(1, this.state.zoomLevel / ZOOM.ZOOM_OUT_FACTOR);
         const newWidth = 100 / newLevel;
 
@@ -363,7 +357,7 @@ export class ZoomControl extends Component {
             return;
         }
 
-        const slideAmount = this.zoomWidthPercent * ZOOM.SLIDE_OVERLAP_FACTOR;
+        const slideAmount = this.zoomWidthPercent() * ZOOM.SLIDE_OVERLAP_FACTOR;
         this.state.zoomStartPercent = Math.max(0, this.state.zoomStartPercent - slideAmount);
         this.notifyZoomChange();
     }
@@ -377,8 +371,8 @@ export class ZoomControl extends Component {
             return;
         }
 
-        const slideAmount = this.zoomWidthPercent * ZOOM.SLIDE_OVERLAP_FACTOR;
-        const maxStart = 100 - this.zoomWidthPercent;
+        const slideAmount = this.zoomWidthPercent() * ZOOM.SLIDE_OVERLAP_FACTOR;
+        const maxStart = 100 - this.zoomWidthPercent();
         this.state.zoomStartPercent = Math.min(maxStart, this.state.zoomStartPercent + slideAmount);
         this.notifyZoomChange();
     }
