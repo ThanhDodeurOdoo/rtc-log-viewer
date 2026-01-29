@@ -1,0 +1,7 @@
+<templates>
+    <t t-name="Root">
+        <div id="root">
+            <Main />
+        </div>
+    </t>
+</templates>

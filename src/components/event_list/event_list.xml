@@ -1,0 +1,16 @@
+<templates>
+    <t t-name="EventList">
+        <div class="event-list">
+            <div t-if="!this.props.events.length" class="no-data">
+                <t t-out="this.props.noDataMessage || 'No events available'" />
+            </div>
+            <div t-else="" class="event-items">
+                <div t-foreach="this.props.events" t-as="event" t-key="event_index" t-attf-class="event-item {{ event.level ? event.level : '' }}">
+                    <span class="event-time" t-out="this.helpers.formatEventTime(event)" />
+                    <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-out="event.level" />
+                    <span class="event-text" t-out="this.helpers.formatEventText(event)" />
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

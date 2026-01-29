@@ -1,0 +1,29 @@
+<templates>
+    <t t-name="SnapshotFilters">
+        <div t-if="this.log.snapshotKeys().length &gt; 0" class="filter-section">
+            <div class="filter-header" t-on-click="this.toggle">
+                <h4>Snapshots</h4>
+                <span class="filter-count">
+                    (<t t-out="this.log.selectedSnapshots().size" /> / <t t-out="this.log.snapshotKeys().length" />)
+                </span>
+                <button t-attf-class="filter-toggle {{ this.isOpen() ? 'expanded' : 'collapsed' }}" t-on-click.stop="this.toggle">
+                    <t t-out="this.isOpen() ? '▼' : '►'" />
+                </button>
+            </div>
+            <div t-if="this.isOpen()" class="filter-content">
+                <div class="filter-actions">
+                    <button class="filter-action-btn" t-on-click="() =&gt; this.toggleAll(true)">Select All</button>
+                    <button class="filter-action-btn" t-on-click="() =&gt; this.toggleAll(false)">Deselect All</button>
+                </div>
+                <div class="filter-items">
+                    <div t-foreach="this.log.snapshotKeys()" t-as="snapshotKey" t-key="snapshotKey" class="filter-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" t-model="this.snapshotModel(snapshotKey)" />
+                            <span class="snapshot-label" t-out="this.log.formatSnapshotLabel(snapshotKey)" />
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

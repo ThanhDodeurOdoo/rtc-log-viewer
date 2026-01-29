@@ -1,0 +1,81 @@
+<templates>
+    <t t-name="LogViewer">
+        <div class="log-viewer">
+            <div class="log-viewer-header">
+                <h3>RTC Log Viewer</h3>
+                <div class="view-controls">
+                    <button t-foreach="this.viewOptions" t-as="option" t-key="option.id" t-attf-class="view-option {{ this.activeView() === option.id ? 'active' : '' }}" t-on-click="() =&gt; this.setActiveView(option.id)">
+                        <t t-out="option.label" />
+                    </button>
+                </div>
+            </div>
+            <div class="log-viewer-content">
+                <div t-if="this.activeView() === 'timeline'" class="timeline-view">
+                    <h4>Timeline View</h4>
+                    <p class="description">View events over time for all sessions in the call.</p>
+                    <NoData t-if="!this.timelineKeys().length" message="'No timeline data available'" />
+                    <div t-else="" class="timeline-selector">
+                        <label for="timeline-select">Select Timeline:</label>
+                        <select id="timeline-select" t-model="this.selectedTimeline">
+                            <option value="">-- Select a timeline --</option>
+                            <option t-foreach="this.timelineKeys()" t-as="key" t-key="key" t-att-value="key" t-out="this.helpers.formatTime(key)" />
+                        </select>
+                        <div t-if="this.selectedTimeline()" class="session-timeline-container">
+                            <div class="sessions-header">
+                                <h4>Sessions in Timeline</h4>
+                                <div class="session-tabs">
+                                    <div t-foreach="this.availableSessions()" t-as="sessionId" t-key="sessionId" t-attf-class="session-tab {{ this.selectedSession() === sessionId ? 'active' : '' }}" t-on-click="() =&gt; this.selectSession(sessionId)">
+                                        Session <t t-out="sessionId" />
+                                        <span t-if="this.isSessionSelf(sessionId)" class="self-indicator">(Self)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div t-if="this.selectedSession()" class="session-events">
+                                <h4>Events for Session <t t-out="this.selectedSession()" />
+                                </h4>
+                                <EventList events="this.sessionEvents()" noDataMessage="'No events found for this session'" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div t-elif="this.activeView() === 'session'" class="session-view">
+                    <h4>Session View</h4>
+                    <p class="description">Examine the details of specific sessions from snapshots.</p>
+                    <NoData t-if="!this.snapshotKeys().length" message="'No snapshot data available'" />
+                    <div t-else="" class="snapshot-selector">
+                        <label for="snapshot-select">Select Snapshot:</label>
+                        <select id="snapshot-select" t-model="this.selectedSnapshot">
+                            <option value="">-- Select a snapshot --</option>
+                            <option t-foreach="this.snapshotKeys()" t-as="key" t-key="key" t-att-value="key" t-out="this.helpers.formatTime(key)" />
+                        </select>
+                        <div t-if="this.selectedSnapshot()" class="snapshot-sessions">
+                            <h4>Sessions in Snapshot</h4>
+                            <NoData t-if="!this.snapshotSessions().length" message="'No sessions found in this snapshot'" />
+                            <div t-else="" class="session-list">
+                                <div t-foreach="this.snapshotSessions()" t-as="session" t-key="session.id" class="session-entry">
+                                    <div class="session-header" t-on-click="() =&gt; this.toggleSession(session.id)">
+                                        <h5>
+                                            Session ID: <span t-out="session.id" />
+                                            <span t-if="session.isSelf" class="self-indicator">(Self)</span>
+                                        </h5>
+                                        <button t-attf-class="session-toggle {{ this.expandedSessions()[session.id] ? 'expanded' : 'collapsed' }}" t-on-click.stop="() =&gt; this.toggleSession(session.id)">
+                                            <t t-out="this.expandedSessions()[session.id] ? '▼' : '►'" />
+                                        </button>
+                                    </div>
+                                    <div t-if="this.expandedSessions()[session.id]" class="session-details">
+                                        <ConnectionState state="session.state || 'Unknown'" stateClass="this.helpers.getSessionStateClass(session)" />
+                                        <SessionProperties session="session" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div t-elif="this.activeView() === 'raw'" class="raw-view">
+                    <h4>Raw Data View</h4>
+                    <pre t-out="window.JSON.stringify(this.logs(), null, 2)" />
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

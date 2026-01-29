@@ -1,0 +1,14 @@
+<templates>
+    <t t-name="TimelineViewer">
+        <div class="timelines-container">
+            <h3>Call Timelines</h3>
+            <p class="view-description">Each timeline represents a sequence of events for a specific call session.</p>
+            <NoData t-if="!this.timelineKeys().length" message="'No timeline data available in this log file'" />
+            <div t-else="" class="timeline-list">
+                <div t-foreach="this.timelineKeys()" t-as="timelineKey" t-key="timelineKey">
+                    <TimelineEntry timelineKey="timelineKey" />
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

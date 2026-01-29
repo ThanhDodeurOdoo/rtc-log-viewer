@@ -1,0 +1,15 @@
+<templates>
+    <t t-name="ExpandableSection">
+        <div t-attf-class="{{ this.props.className }}">
+            <div t-attf-class="{{ this.props.headerClass }}">
+                <h4 t-out="this.props.title" />
+                <button t-attf-class="{{ this.props.toggleClass }} {{ this.expanded() ? 'expanded' : 'collapsed' }}" t-on-click="this.toggleExpanded">
+                    <t t-out="this.expanded() ? '▼' : '►'" />
+                </button>
+            </div>
+            <div t-if="this.expanded()" t-attf-class="{{ this.props.contentClass }}">
+                <t t-call-slot="default" />
+            </div>
+        </div>
+    </t>
+</templates>

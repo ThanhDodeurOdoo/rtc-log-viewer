@@ -1,5 +1,5 @@
-const { Component, xml, signal, computed, props, types } = owl;
-import helpers from "./utils/helpers.js";
+const { Component, signal, computed, props, types } = owl;
+import helpers from "../../utils/helpers.js";
 
 const ZOOM = {
     MIN_WIDTH_PERCENT: 0.01,
@@ -21,73 +21,7 @@ const SELECTORS = {
 };
 
 export class ZoomControl extends Component {
-    static template = xml`
-        <div class="zoom-navigator">
-            <div class="zoom-overview">
-                <div class="zoom-overview-bar" t-on-mousedown="this.onBarClick">
-                    <!-- Timeline with event markers -->
-                    <div class="zoom-overview-timeline">
-                        <div
-                            t-foreach="this.props.events()"
-                            t-as="event"
-                            t-key="event.id"
-                            t-attf-class="zoom-overview-event {{ event.level || 'info' }}"
-                            t-attf-style="left: {{ event.fullPosition }}%;"
-                        ></div>
-                    </div>
-
-                    <!-- Zoom selector with handles -->
-                    <div
-                        class="zoom-selector"
-                        t-attf-style="left: {{ this.zoomStartPercent() }}%; width: {{ this.zoomWidthPercent() }}%;"
-                        t-on-mousedown="this.onSelectorMouseDown"
-                    >
-                        <div
-                            class="zoom-handle zoom-handle-left"
-                            t-on-mousedown.stop="this.startLeftHandleDrag"
-                        ></div>
-                        <div
-                            class="zoom-handle zoom-handle-right"
-                            t-on-mousedown.stop="this.startRightHandleDrag"
-                        ></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="zoom-controls">
-                <button
-                    class="zoom-control-btn"
-                    t-on-click="this.slideLeft"
-                    t-att-disabled="this.cannotSlideLeft()"
-                    title="Slide left"
-                >←</button>
-                <button
-                    class="zoom-control-btn"
-                    t-att-disabled="this.isLowZoom()"
-                    t-on-click="this.resetZoom"
-                >Reset Zoom</button>
-                <button
-                    class="zoom-control-btn"
-                    t-on-click="this.zoomOut"
-                    t-att-disabled="this.isLowZoom()"
-                >-</button>
-                <button
-                    class="zoom-control-btn"
-                    t-on-click="this.zoomIn"
-                >+</button>
-                <button
-                    class="zoom-control-btn"
-                    t-on-click="this.slideRight"
-                    t-att-disabled="this.cannotSlideRight()"
-                    title="Slide right"
-                >→</button>
-            </div>
-
-            <div t-if="this.props.totalDuration()" class="zoom-duration">
-                Visible timespan: <span t-out="this.helpers.formatDuration(this.visibleDuration())"></span>
-            </div>
-        </div>
-    `;
+    static template = "ZoomControl";
 
     props = props({
         events: types.reactiveValue(),
