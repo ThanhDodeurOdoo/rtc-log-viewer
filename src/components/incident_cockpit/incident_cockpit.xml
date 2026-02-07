@@ -1,0 +1,48 @@
+<templates>
+    <t t-name="IncidentCockpit">
+        <section class="incident-cockpit">
+            <div class="incident-cockpit-header">
+                <div>
+                    <h3>Health Card</h3>
+                    <p class="view-description">
+                        Fast triage summary across the currently selected timelines/snapshots.
+                    </p>
+                </div>
+                <div class="health-pill" t-attf-class="health-pill {{ this.metrics().healthState }}">
+                    Health <span t-out="this.metrics().healthScore" />/100
+                </div>
+            </div>
+            <div class="cockpit-kpis">
+                <div class="cockpit-kpi">
+                    <span class="kpi-label">Failure Rate</span>
+                    <span class="kpi-value" t-out="this.metrics().failureRateText" />
+                </div>
+                <div class="cockpit-kpi">
+                    <span class="kpi-label">SFU Timelines</span>
+                    <span class="kpi-value" t-out="this.metrics().sfuTimelines" />
+                </div>
+                <div class="cockpit-kpi">
+                    <span class="kpi-label">P2P Timelines</span>
+                    <span class="kpi-value" t-out="this.metrics().p2pTimelines" />
+                </div>
+                <div class="cockpit-kpi anomaly-kpi">
+                    <span class="kpi-label">Top Anomalies</span>
+                    <ul class="anomaly-list">
+                        <li
+                            t-foreach="this.metrics().anomalies"
+                            t-as="anomaly"
+                            t-key="anomaly_index"
+                        >
+                            <span t-out="anomaly.label" />:
+                            <strong t-out="anomaly.count" />
+                        </li>
+                        <li t-if="!this.metrics().anomalies.length">No major anomalies detected.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="trend-grid">
+                <TrendCard t-foreach="this.metrics().trends" t-as="trend" t-key="trend.label" trend="trend" />
+            </div>
+        </section>
+    </t>
+</templates>

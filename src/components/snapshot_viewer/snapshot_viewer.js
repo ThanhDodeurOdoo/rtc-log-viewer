@@ -1,4 +1,4 @@
-const { Component, signal, computed, plugin, props, types } = owl;
+const { Component, signal, computed, plugin, props, types, useEffect } = owl;
 import helpers from "../../utils/helpers.js";
 import { ConnectionState } from "../connection_state/connection_state.js";
 import { SessionProperties } from "../session_properties/session_properties.js";
@@ -17,6 +17,7 @@ export class SnapshotViewer extends Component {
     setup() {
         this.expanded = signal(false);
         this.expandedSessions = signal.Object({});
+        this.rootRef = signal(null);
         this.helpers = helpers;
         this.log = plugin(LogPlugin);
         this.snapshotData = computed(() => {
@@ -52,10 +53,35 @@ export class SnapshotViewer extends Component {
                 return this.props.snapshotKey;
             }
         });
+
+        useEffect(() => {
+            const focus = this.log.snapshotFocus();
+            if (!focus || focus.snapshotKey !== this.props.snapshotKey) {
+                return;
+            }
+            this.expanded.set(true);
+            this.rootRef()?.scrollIntoView({ behavior: "smooth", block: "start" });
+            if (focus.sessionId) {
+                const targetSessionId = this.findSnapshotSessionId(focus.sessionId);
+                if (targetSessionId !== null) {
+                    const expanded = this.expandedSessions();
+                    expanded[targetSessionId] = true;
+                }
+            }
+            this.log.clearSnapshotFocus();
+        });
     }
 
     toggleSession(sessionId) {
         const expanded = this.expandedSessions();
         expanded[sessionId] = !expanded[sessionId];
+    }
+
+    findSnapshotSessionId(sessionId) {
+        const normalized = String(sessionId);
+        const session = this.sessions().find(
+            (item) => item.id !== undefined && String(item.id) === normalized
+        );
+        return session ? session.id : null;
     }
 }

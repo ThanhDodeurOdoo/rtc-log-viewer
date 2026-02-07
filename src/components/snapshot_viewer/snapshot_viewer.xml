@@ -1,6 +1,6 @@
 <templates>
     <t t-name="SnapshotViewer">
-        <div class="snapshot-viewer">
+        <div class="snapshot-viewer" t-ref="this.rootRef">
             <div class="snapshot-header" t-on-click="() =&gt; this.expanded.set(!this.expanded())">
                 <h4 t-out="this.snapshotTitle()" />
                 <button t-attf-class="snapshot-toggle {{ this.expanded() ? 'expanded' : 'collapsed' }}" t-on-click.stop="() =&gt; this.expanded.set(!this.expanded())">
