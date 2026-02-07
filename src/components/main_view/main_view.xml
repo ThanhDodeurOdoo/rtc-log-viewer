@@ -1,7 +1,7 @@
 <templates>
     <t t-name="MainView">
         <div class="main-view">
-            <AnalysisView t-if="this.props.activeView() === 'analysis'" />
+            <AnalysisView t-if="this.props.activeView() === 'analysis'" activeView="this.props.activeView" />
             <StatsView t-if="this.props.activeView() === 'stats'" />
             <TimelineViewer t-if="this.props.activeView() === 'timelines'" />
             <div t-if="this.props.activeView() === 'snapshots'" class="snapshots-container">
