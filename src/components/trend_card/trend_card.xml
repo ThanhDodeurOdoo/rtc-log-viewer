@@ -1,0 +1,23 @@
+<templates>
+    <t t-name="TrendCard">
+        <div class="trend-card">
+            <div class="trend-header">
+                <h5 t-out="this.props.trend.label" />
+                <span class="trend-samples">
+                    <t t-out="this.props.trend.sampleCount" /> samples
+                </span>
+            </div>
+            <div class="trend-values">
+                <span class="trend-latest">
+                    Last: <strong t-out="this.formatValue(this.props.trend.latest, this.props.trend.kind)" />
+                </span>
+                <span class="trend-avg">
+                    Avg: <strong t-out="this.formatValue(this.props.trend.avg, this.props.trend.kind)" />
+                </span>
+            </div>
+            <svg class="trend-sparkline" viewBox="0 0 100 28" preserveAspectRatio="none">
+                <path t-if="this.sparklinePath()" class="sparkline-path" t-att-d="this.sparklinePath()" />
+            </svg>
+        </div>
+    </t>
+</templates>

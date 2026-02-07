@@ -8,6 +8,8 @@ const TEMPLATE_FILES = [
     "./components/upload_panel/upload_panel.xml",
     "./components/system_info_panel/system_info_panel.xml",
     "./components/view_controls/view_controls.xml",
+    "./components/incident_cockpit/incident_cockpit.xml",
+    "./components/trend_card/trend_card.xml",
     "./components/timeline_filters/timeline_filters.xml",
     "./components/snapshot_filters/snapshot_filters.xml",
     "./components/main_view/main_view.xml",

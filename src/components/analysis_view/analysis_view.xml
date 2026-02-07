@@ -1,8 +1,9 @@
 <templates>
     <t t-name="AnalysisView">
         <div class="analysis-view">
-            <h3>Connection Analysis [⚠️WORK IN PROGESS⚠️]</h3>
+            <h3>Connection Analysis [⚠️WORK IN PROGRESS⚠️]</h3>
             <p class="view-description">Automatic analysis of connection issues and potential problems. The results may be false positives.</p>
+            <IncidentCockpit t-if="this.hasLogData()" />
             <NoData t-if="!this.hasLogData()" message="'No log data available for analysis'" />
             <div t-else="" class="analysis-content">
                 <div t-if="this.isAnalyzing()" class="loading-analysis">
@@ -65,6 +66,10 @@
                                                 <h6>Technical Details</h6>
                                                 <pre t-out="window.JSON.stringify(instance.details, null, 2)" />
                                             </div>
+                                            <div class="issue-actions">
+                                                <button t-if="this.canOpenTimeline(instance)" class="issue-action-btn" t-on-click="() =&gt; this.openTimelineEvidence(instance)">Open Timeline Evidence</button>
+                                                <button t-if="this.canOpenSnapshot(instance)" class="issue-action-btn" t-on-click="() =&gt; this.openSnapshotContext(instance)">Open Snapshot Context</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -90,6 +95,10 @@
                                     <div t-if="group.details" class="issue-technical-details">
                                         <h6>Technical Details</h6>
                                         <pre t-out="window.JSON.stringify(group.details, null, 2)" />
+                                    </div>
+                                    <div class="issue-actions">
+                                        <button t-if="this.canOpenTimeline(group)" class="issue-action-btn" t-on-click="() =&gt; this.openTimelineEvidence(group)">Open Timeline Evidence</button>
+                                        <button t-if="this.canOpenSnapshot(group)" class="issue-action-btn" t-on-click="() =&gt; this.openSnapshotContext(group)">Open Snapshot Context</button>
                                     </div>
                                 </div>
                             </div>

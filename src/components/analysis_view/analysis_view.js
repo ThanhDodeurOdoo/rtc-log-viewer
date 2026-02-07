@@ -1,6 +1,7 @@
-const { Component, signal, useEffect, computed, plugin } = owl;
+const { Component, signal, useEffect, computed, plugin, props, types } = owl;
 import helpers from "../../utils/helpers.js";
 import { NoData } from "../no_data/no_data.js";
+import { IncidentCockpit } from "../incident_cockpit/incident_cockpit.js";
 import { LogPlugin } from "../../plugins/log_plugin.js";
 
 const ISSUE_TYPES = {
@@ -43,7 +44,10 @@ const AUDIO_STALL_NETWORK_STATE = 3;
 export class AnalysisView extends Component {
     static template = "AnalysisView";
 
-    static components = { NoData };
+    static components = { NoData, IncidentCockpit };
+
+    props = props({ activeView: types.signal() });
+
     setup() {
         this.log = plugin(LogPlugin);
         this.rawResults = signal.Array([]);
@@ -177,6 +181,174 @@ export class AnalysisView extends Component {
         const key = `${groupIndex}-${instanceIndex}`;
         const expanded = this.expandedInstances();
         expanded[key] = !expanded[key];
+    }
+
+    canOpenTimeline(issue) {
+        return Boolean(this.resolveTimelineKey(issue));
+    }
+
+    canOpenSnapshot(issue) {
+        return Boolean(this.resolveSnapshotKey(issue));
+    }
+
+    openTimelineEvidence(issue) {
+        const timelineKey = this.resolveTimelineKey(issue);
+        if (!timelineKey) {
+            return;
+        }
+        const selectedTimelines = this.log.selectedTimelines();
+        if (!selectedTimelines.has(timelineKey)) {
+            const updated = new Set(selectedTimelines);
+            updated.add(timelineKey);
+            this.log.selectedTimelines.set(updated);
+        }
+        this.log.focusTimeline({
+            timelineKey,
+            sessionId:
+                issue.sessionId !== undefined && issue.sessionId !== null
+                    ? String(issue.sessionId)
+                    : null,
+            eventPattern: this.buildEventPattern(issue),
+            eventTime: this.getIssueEventTime(issue),
+        });
+        this.props.activeView.set("timelines");
+    }
+
+    openSnapshotContext(issue) {
+        const snapshotKey = this.resolveSnapshotKey(issue);
+        if (!snapshotKey) {
+            return;
+        }
+        const selectedSnapshots = this.log.selectedSnapshots();
+        if (!selectedSnapshots.has(snapshotKey)) {
+            const updated = new Set(selectedSnapshots);
+            updated.add(snapshotKey);
+            this.log.selectedSnapshots.set(updated);
+        }
+        this.log.focusSnapshot({
+            snapshotKey,
+            sessionId:
+                issue.sessionId !== undefined && issue.sessionId !== null
+                    ? String(issue.sessionId)
+                    : null,
+        });
+        this.props.activeView.set("snapshots");
+    }
+
+    resolveTimelineKey(issue) {
+        if (issue.timelineKey) {
+            return issue.timelineKey;
+        }
+        if (issue.timestamp) {
+            return this.findTimelineByTimestamp(issue.timestamp);
+        }
+        return null;
+    }
+
+    resolveSnapshotKey(issue) {
+        if (issue.timestamp) {
+            return issue.timestamp;
+        }
+        if (issue.timelineKey) {
+            return this.findNearestSnapshotKey(issue.timelineKey);
+        }
+        return null;
+    }
+
+    findTimelineByTimestamp(timestampKey) {
+        const target = new Date(timestampKey);
+        if (Number.isNaN(target.getTime())) {
+            return null;
+        }
+        const timelines = this.log.timelines();
+        for (const [timelineKey, timeline] of Object.entries(timelines)) {
+            if (!timeline?.start) {
+                continue;
+            }
+            const start = new Date(timeline.start);
+            const end = timeline.end ? new Date(timeline.end) : null;
+            if (Number.isNaN(start.getTime())) {
+                continue;
+            }
+            const endTime = end && !Number.isNaN(end.getTime()) ? end : start;
+            if (
+                target.getTime() >= start.getTime() &&
+                target.getTime() <= endTime.getTime()
+            ) {
+                return timelineKey;
+            }
+        }
+        return null;
+    }
+
+    findNearestSnapshotKey(timelineKey) {
+        const snapshotKeys = this.log.snapshotKeys();
+        if (!snapshotKeys.length) {
+            return null;
+        }
+        const target = new Date(timelineKey);
+        if (Number.isNaN(target.getTime())) {
+            return snapshotKeys[0];
+        }
+        let nearest = snapshotKeys[0];
+        let nearestDistance = Infinity;
+        for (const snapshotKey of snapshotKeys) {
+            const candidate = new Date(snapshotKey);
+            if (Number.isNaN(candidate.getTime())) {
+                continue;
+            }
+            const distance = Math.abs(candidate.getTime() - target.getTime());
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = snapshotKey;
+            }
+        }
+        return nearest;
+    }
+
+    getIssueEventTime(issue) {
+        return (
+            issue.details?.eventTime ||
+            issue.details?.lastEventTime ||
+            issue.details?.lastRecoveryTime ||
+            null
+        );
+    }
+
+    buildEventPattern(issue) {
+        if (issue.details?.event) {
+            return issue.details.event;
+        }
+        switch (issue.errorCode) {
+            case ISSUE_CODES.RECOVERY_LOOP:
+                return "attempting to recover connection";
+            case ISSUE_CODES.RECOVERY_CANDIDATE_STORM:
+                return "connection recovery candidate";
+            case ISSUE_CODES.SFU_LOAD_FAILED:
+                return "failed to load sfu server";
+            case ISSUE_CODES.SFU_CONNECT_TIMEOUT:
+                return "sfu connection timeout";
+            case ISSUE_CODES.SFU_CONNECT_STALLED:
+                return "loading sfu server";
+            case ISSUE_CODES.SFU_CONNECT_SLOW:
+                return "connection state change: connected";
+            case ISSUE_CODES.SFU_CONNECTION_CLOSED:
+                return "connection state change: closed";
+            case ISSUE_CODES.BROADCAST_CHANNEL_ISSUE:
+                return "broadcast channel";
+            case ISSUE_CODES.SELF_SESSION_REMOVED:
+                return "self session deleted by the server, ending call";
+            case ISSUE_CODES.ICE_CANDIDATE_MISSING_PEER:
+                return issue.details?.peerId
+                    ? `received ice-candidate for missing peer ${issue.details.peerId}`
+                    : "received ice-candidate for missing peer";
+            case ISSUE_CODES.ICE_CONNECTION_ISSUES:
+                return "ice connection";
+            case ISSUE_CODES.FALLBACK_MODE:
+                return "using peer-to-peer";
+            default:
+                return "";
+        }
     }
 
     getRecommendation(issue) {

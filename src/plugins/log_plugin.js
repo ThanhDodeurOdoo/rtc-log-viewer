@@ -5,6 +5,9 @@ export class LogPlugin extends Plugin {
         this.rawData = signal(null);
         this.selectedTimelines = signal.Set(new Set());
         this.selectedSnapshots = signal.Set(new Set());
+        this.timelineFocus = signal(null);
+        this.snapshotFocus = signal(null);
+        this._focusRequestId = 0;
 
         this.isLoaded = computed(() => this.rawData() !== null);
         this.odooInfo = computed(() => this.rawData()?.odooInfo || null);
@@ -75,6 +78,8 @@ export class LogPlugin extends Plugin {
         this.rawData.set(null);
         this.selectedTimelines.set(new Set());
         this.selectedSnapshots.set(new Set());
+        this.timelineFocus.set(null);
+        this.snapshotFocus.set(null);
     }
 
     toggleTimeline(key) {
@@ -127,5 +132,29 @@ export class LogPlugin extends Plugin {
         } catch {
             return `Snapshot: ${snapshotKey}`;
         }
+    }
+
+    focusTimeline(payload) {
+        this._focusRequestId += 1;
+        this.timelineFocus.set({
+            requestId: this._focusRequestId,
+            ...payload,
+        });
+    }
+
+    clearTimelineFocus() {
+        this.timelineFocus.set(null);
+    }
+
+    focusSnapshot(payload) {
+        this._focusRequestId += 1;
+        this.snapshotFocus.set({
+            requestId: this._focusRequestId,
+            ...payload,
+        });
+    }
+
+    clearSnapshotFocus() {
+        this.snapshotFocus.set(null);
     }
 }

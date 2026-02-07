@@ -1,4 +1,4 @@
-const { Component, signal, computed, plugin, props, types } = owl;
+const { Component, signal, computed, plugin, props, types, useEffect } = owl;
 import helpers from "../../utils/helpers.js";
 import { ConnectionState } from "../connection_state/connection_state.js";
 import { EventList } from "../event_list/event_list.js";
@@ -160,6 +160,14 @@ export class TimelineEntry extends Component {
             return end.getTime() - start.getTime();
         });
 
+        useEffect(() => {
+            const focus = this.log.timelineFocus();
+            if (!focus || focus.timelineKey !== this.props.timelineKey) {
+                return;
+            }
+            this.applyTimelineFocus(focus);
+        });
+
         this.handleZoomChange = this.handleZoomChange.bind(this);
         this.handleResize = this.handleResize.bind(this);
     }
@@ -266,6 +274,79 @@ export class TimelineEntry extends Component {
         }
 
         return sessionInfo.logs;
+    }
+
+    applyTimelineFocus(focus) {
+        this.expanded.set(true);
+        const sessionId = this.resolveFocusedSessionId(focus);
+        if (sessionId) {
+            const expanded = this.expandedSessions();
+            expanded[sessionId] = true;
+        }
+        this.rootRef()?.scrollIntoView({ behavior: "smooth", block: "start" });
+        this.log.clearTimelineFocus();
+        if (!sessionId) {
+            return;
+        }
+        const eventIndex = this.findFocusedEventIndex(sessionId, focus);
+        this.highlightEvent(sessionId, eventIndex);
+    }
+
+    resolveFocusedSessionId(focus) {
+        const sessionIds = this.sessionIds();
+        if (!sessionIds.length) {
+            return null;
+        }
+        if (focus.sessionId) {
+            const normalized = String(focus.sessionId);
+            if (sessionIds.includes(normalized)) {
+                return normalized;
+            }
+        }
+        const selfSessionId = this.timelineData().selfSessionId?.toString();
+        if (selfSessionId && sessionIds.includes(selfSessionId)) {
+            return selfSessionId;
+        }
+        return this.sortedSessionIds()[0] || sessionIds[0];
+    }
+
+    findFocusedEventIndex(sessionId, focus) {
+        const events = this.getSessionEvents(sessionId);
+        if (!events.length) {
+            return 0;
+        }
+        const pattern = (focus.eventPattern || "").toLowerCase().trim();
+        const eventTime = focus.eventTime || null;
+
+        if (pattern && eventTime) {
+            const index = events.findIndex((event) => {
+                const text = helpers.formatEventText(event).toLowerCase();
+                return text.includes(pattern) && helpers.formatEventTime(event) === eventTime;
+            });
+            if (index >= 0) {
+                return index;
+            }
+        }
+
+        if (pattern) {
+            const index = events.findIndex((event) =>
+                helpers.formatEventText(event).toLowerCase().includes(pattern)
+            );
+            if (index >= 0) {
+                return index;
+            }
+        }
+
+        if (eventTime) {
+            const index = events.findIndex(
+                (event) => helpers.formatEventTime(event) === eventTime
+            );
+            if (index >= 0) {
+                return index;
+            }
+        }
+
+        return 0;
     }
 
     toggleSessionDetails(sessionId) {
