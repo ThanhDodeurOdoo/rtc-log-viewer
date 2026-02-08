@@ -4,6 +4,10 @@
             <h3>Connection Analysis [⚠️WORK IN PROGRESS⚠️]</h3>
             <p class="view-description">Automatic analysis of connection issues and potential problems. The results may be false positives.</p>
             <IncidentCockpit t-if="this.hasLogData()" />
+            <div t-if="this.hasLogData()" class="analysis-toolbar">
+                <button class="issue-action-btn" t-on-click="() =&gt; this.exportReport('json')">Export Diagnostic Report (.json)</button>
+                <button class="issue-action-btn" t-on-click="() =&gt; this.exportReport('markdown')">Export Diagnostic Report (.md)</button>
+            </div>
             <NoData t-if="!this.hasLogData()" message="'No log data available for analysis'" />
             <div t-else="" class="analysis-content">
                 <div t-if="this.isAnalyzing()" class="loading-analysis">

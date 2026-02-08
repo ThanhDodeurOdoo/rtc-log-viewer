@@ -733,21 +733,29 @@ export class TimelineEntry extends Component {
             expanded[sessionId] = true;
         }
 
+        const totalEvents = this.getSessionEvents(sessionId).length;
+        if (totalEvents > 0) {
+            index = Math.max(0, Math.min(index, totalEvents - 1));
+        } else {
+            index = 0;
+        }
+
+        const sessionRow = this.rootRef()?.querySelector(
+            `.session-row[data-session-id="${sessionId}"]`
+        );
+        const eventList = sessionRow?.querySelector(".event-list");
+        if (eventList?.dataset.virtualized === "1") {
+            const rowHeight = Number(eventList.dataset.rowHeight || 32);
+            const targetScrollTop =
+                index * rowHeight - eventList.clientHeight / 2 + rowHeight / 2;
+            eventList.scrollTop = Math.max(0, targetScrollTop);
+        }
+
         // Find and scroll to the event in the list
         setTimeout(() => {
-            const eventElements = this.rootRef()?.querySelectorAll(
-                `.session-row[data-session-id="${sessionId}"] .event-item`,
+            const eventElement = this.rootRef()?.querySelector(
+                `.session-row[data-session-id="${sessionId}"] .event-item[data-event-index="${index}"]`,
             );
-            if (!eventElements.length) {
-                return;
-            }
-
-            // Get the correct event element - handle zero-based indexing
-            if (index >= eventElements.length) {
-                index = eventElements.length - 1;
-            }
-
-            const eventElement = eventElements[index];
             if (eventElement) {
                 // Scroll the event into view
                 eventElement.scrollIntoView({ behavior: "smooth", block: "center" });

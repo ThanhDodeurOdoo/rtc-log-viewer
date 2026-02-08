@@ -1,11 +1,20 @@
 <templates>
     <t t-name="EventList">
-        <div class="event-list">
+        <div class="event-list" t-ref="this.containerRef" t-on-scroll="this.onScroll" t-att-data-virtualized="this.isVirtualized() ? '1' : '0'" t-att-data-row-height="this.rowHeight">
             <div t-if="!this.props.events.length" class="no-data">
                 <t t-out="this.props.noDataMessage || 'No events available'" />
             </div>
+            <div t-elif="this.isVirtualized()" class="event-items event-items-virtual" t-attf-style="height: {{ this.totalHeight() }}px;">
+                <div class="event-items-window" t-attf-style="transform: translateY({{ this.visibleOffset() }}px);">
+                    <div t-foreach="this.visibleItems()" t-as="item" t-key="item.index" t-attf-class="event-item {{ item.event.level ? item.event.level : '' }}" t-att-data-event-index="item.index">
+                        <span class="event-time" t-out="this.helpers.formatEventTime(item.event)" />
+                        <span t-if="item.event.level" t-attf-class="event-level {{ item.event.level }}" t-out="item.event.level" />
+                        <span class="event-text" t-out="this.helpers.formatEventText(item.event)" />
+                    </div>
+                </div>
+            </div>
             <div t-else="" class="event-items">
-                <div t-foreach="this.props.events" t-as="event" t-key="event_index" t-attf-class="event-item {{ event.level ? event.level : '' }}">
+                <div t-foreach="this.props.events" t-as="event" t-key="event_index" t-attf-class="event-item {{ event.level ? event.level : '' }}" t-att-data-event-index="event_index">
                     <span class="event-time" t-out="this.helpers.formatEventTime(event)" />
                     <span t-if="event.level" t-attf-class="event-level {{ event.level }}" t-out="event.level" />
                     <span class="event-text" t-out="this.helpers.formatEventText(event)" />
