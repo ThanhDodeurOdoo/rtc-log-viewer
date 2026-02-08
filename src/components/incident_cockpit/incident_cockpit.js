@@ -178,11 +178,18 @@ function findP2pConnectionSample({ entriesBySessionId, timelineKey }) {
         if (!isP2pSession) {
             continue;
         }
-        const startAndConnected = findP2pStartAndConnected(logs);
-        if (!startAndConnected) {
+        const attempt = findP2pAttempt(logs);
+        if (!attempt.hadAttempt) {
             continue;
         }
-        const { startLog, connectedLog } = startAndConnected;
+        if (!attempt.startLog || !attempt.connectedLog) {
+            return {
+                hasP2pAttempt: true,
+                durationMs: null,
+                firstTrackMs: null,
+            };
+        }
+        const { startLog, connectedLog } = attempt;
         const startTime = helpers.extractEventDate(startLog, timelineKey);
         const connectedTime = helpers.extractEventDate(connectedLog, timelineKey);
         if (
@@ -212,8 +219,9 @@ function findP2pConnectionSample({ entriesBySessionId, timelineKey }) {
     };
 }
 
-function findP2pStartAndConnected(logs) {
+function findP2pAttempt(logs) {
     let startLog = null;
+    let hadAttempt = false;
     for (const log of logs) {
         const text = helpers.formatEventText(log);
         if (!startLog) {
@@ -222,17 +230,18 @@ function findP2pStartAndConnected(logs) {
                 text.includes("connection state change: connecting")
             ) {
                 startLog = log;
+                hadAttempt = true;
                 continue;
             }
             if (text.includes("connection state change: connected")) {
-                return { startLog: log, connectedLog: log };
+                return { hadAttempt: true, startLog: log, connectedLog: log };
             }
         }
         if (startLog && text.includes("connection state change: connected")) {
-            return { startLog, connectedLog: log };
+            return { hadAttempt, startLog, connectedLog: log };
         }
     }
-    return null;
+    return { hadAttempt, startLog, connectedLog: null };
 }
 
 function collectTimelineEventStats(entriesBySessionId) {

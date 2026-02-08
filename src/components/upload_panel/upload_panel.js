@@ -1,5 +1,6 @@
 const { Component, signal, plugin } = owl;
 import { LogPlugin } from "../../plugins/log_plugin.js";
+import { logWorkerService } from "../../services/log_worker_service.js";
 
 export class UploadPanel extends Component {
     static template = "UploadPanel";
@@ -9,6 +10,7 @@ export class UploadPanel extends Component {
         this.fileInputRef = signal(null);
         this.fileName = signal("");
         this.isDragOver = signal(false);
+        this.isProcessing = signal(false);
     }
 
     triggerFileInput() {
@@ -40,7 +42,7 @@ export class UploadPanel extends Component {
         this.processFile(file);
     }
 
-    processFile(file) {
+    async processFile(file) {
         if (!file) {
             return;
         }
@@ -51,17 +53,17 @@ export class UploadPanel extends Component {
         }
 
         this.fileName.set(file.name);
+        this.isProcessing.set(true);
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const logs = JSON.parse(e.target.result);
-                this.log.load(logs);
-            } catch {
-                alert("Error parsing the log file. Please ensure it is a valid JSON file.");
-            }
-        };
-        reader.readAsText(file);
+        try {
+            const text = await file.text();
+            const logs = await logWorkerService.parseJsonText(text);
+            this.log.load(logs);
+        } catch {
+            alert("Error parsing the log file. Please ensure it is a valid JSON file.");
+        } finally {
+            this.isProcessing.set(false);
+        }
     }
 
     async loadDemoData() {
@@ -73,6 +75,7 @@ export class UploadPanel extends Component {
                 throw new Error(`Failed to load demo data: ${response.status}`);
             }
             const logs = await response.json();
+            await logWorkerService.setLogData(logs);
             this.log.load(logs);
             this.fileName.set("Demo data");
         } catch (error) {

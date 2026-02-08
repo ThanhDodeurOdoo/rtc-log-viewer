@@ -12,10 +12,11 @@
                 </div>
                 <div class="file-input">
                     <input type="file" accept=".json" t-ref="this.fileInputRef" t-on-change="this.onFileChange" />
-                    <button t-on-click="this.triggerFileInput">Choose File</button>
+                    <button t-on-click="this.triggerFileInput" t-att-disabled="this.isProcessing()">Choose File</button>
                     <span t-if="this.fileName()" class="file-name" t-out="this.fileName()" />
                     <span t-else="" class="file-hint">No file chosen</span>
                 </div>
+                <p t-if="this.isProcessing()" class="download-info">Parsing large log in worker...</p>
                 <div class="demo-loader">
                     <button class="demo-button" t-on-click="this.loadDemoData">Load demo data</button>
                 </div>

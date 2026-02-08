@@ -728,6 +728,17 @@ label {
     line-height: var(--line-height);
 }
 
+.event-items-virtual {
+    position: relative;
+}
+
+.event-items-window {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+}
+
 .event-item:last-child {
     border-bottom: none;
 }
@@ -1621,6 +1632,12 @@ label {
     background-color: var(--color-surface);
     border-radius: var(--radius-md);
     padding: var(--space-lg);
+}
+
+.analysis-toolbar {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
 }
 
 .stats-content {
