@@ -168,6 +168,9 @@ function findFirstTrackDelay({
 }
 
 function findP2pConnectionSample({ entriesBySessionId, timelineKey }) {
+    const durationsMs = [];
+    const firstTrackSamplesMs = [];
+    let hasP2pAttempt = false;
     for (const sessionData of Object.values(entriesBySessionId)) {
         const logs = getSessionLogs(sessionData);
         if (!logs.length) {
@@ -182,12 +185,9 @@ function findP2pConnectionSample({ entriesBySessionId, timelineKey }) {
         if (!attempt.hadAttempt) {
             continue;
         }
+        hasP2pAttempt = true;
         if (!attempt.startLog || !attempt.connectedLog) {
-            return {
-                hasP2pAttempt: true,
-                durationMs: null,
-                firstTrackMs: null,
-            };
+            continue;
         }
         const { startLog, connectedLog } = attempt;
         const startTime = helpers.extractEventDate(startLog, timelineKey);
@@ -199,23 +199,25 @@ function findP2pConnectionSample({ entriesBySessionId, timelineKey }) {
         ) {
             continue;
         }
-        const durationMs = connectedTime.getTime() - startTime.getTime();
+        durationsMs.push(connectedTime.getTime() - startTime.getTime());
         const firstTrackMs = findFirstTrackDelay({
             entriesBySessionId: { current: sessionData },
             timelineKey,
             connectedTime,
             eventPattern: "track received (p2p)",
         });
-        return {
-            hasP2pAttempt: true,
-            durationMs,
-            firstTrackMs,
-        };
+        if (Number.isFinite(firstTrackMs)) {
+            firstTrackSamplesMs.push(firstTrackMs);
+        }
     }
     return {
-        hasP2pAttempt: false,
-        durationMs: null,
-        firstTrackMs: null,
+        hasP2pAttempt,
+        durationMs: durationsMs.length ? durationsMs[durationsMs.length - 1] : null,
+        firstTrackMs: firstTrackSamplesMs.length
+            ? firstTrackSamplesMs[firstTrackSamplesMs.length - 1]
+            : null,
+        durationSamplesMs: durationsMs,
+        firstTrackSamplesMs,
     };
 }
 
@@ -286,7 +288,13 @@ function collectTimelineSummary({ accumulator, timelineKey, timeline }) {
         selfSessionId,
     });
     const p2pSample = sfuSample.hasSfuAttempt
-        ? { hasP2pAttempt: false, durationMs: null, firstTrackMs: null }
+        ? {
+              hasP2pAttempt: false,
+              durationMs: null,
+              firstTrackMs: null,
+              durationSamplesMs: [],
+              firstTrackSamplesMs: [],
+          }
         : findP2pConnectionSample({ entriesBySessionId, timelineKey });
     const eventStats = collectTimelineEventStats(entriesBySessionId);
 
@@ -317,7 +325,7 @@ function updateAttemptCounters({ accumulator, sfuSample, p2pSample }) {
         (sfuSample.hasSfuAttempt && !sfuSample.hasSfuConnected) ||
         (!sfuSample.hasSfuAttempt &&
             p2pSample.hasP2pAttempt &&
-            !Number.isFinite(p2pSample.durationMs))
+            !p2pSample.durationSamplesMs.length)
     ) {
         accumulator.failedTimelines += 1;
     }
@@ -325,7 +333,11 @@ function updateAttemptCounters({ accumulator, sfuSample, p2pSample }) {
 
 function updateTrendData({ accumulator, sfuSample, p2pSample, eventStats }) {
     accumulator.sfuLatencyTrend.push(sfuSample.durationMs);
-    accumulator.p2pLatencyTrend.push(p2pSample.durationMs);
+    if (p2pSample.durationSamplesMs.length) {
+        accumulator.p2pLatencyTrend.push(...p2pSample.durationSamplesMs);
+    } else {
+        accumulator.p2pLatencyTrend.push(p2pSample.durationMs);
+    }
     accumulator.firstTrackTrend.push(
         sfuSample.firstTrackMs ?? p2pSample.firstTrackMs ?? null
     );
