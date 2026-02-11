@@ -19,6 +19,53 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const testDataPath = join(__dirname, "data", "RtcLogs_2026-01-12_05-39.json");
 const testData = JSON.parse(readFileSync(testDataPath, "utf-8"));
+const multiP2pSamplesData = {
+    timelines: {
+        "2026-02-11T12:16:37.178Z": {
+            selfSessionId: 100,
+            entriesBySessionId: {
+                100: {
+                    step: "",
+                    state: "",
+                    logs: [
+                        {
+                            event: "2026-02-11T12:16:37.179Z: no sfu server info, using peer-to-peer",
+                        },
+                    ],
+                },
+                101: {
+                    step: "p2p",
+                    state: "",
+                    logs: [
+                        {
+                            event: "2026-02-11T12:16:38.000Z: gathering state change: gathering",
+                            level: "info",
+                        },
+                        {
+                            event: "2026-02-11T12:16:38.310Z: connection state change: connected",
+                            level: "info",
+                        },
+                    ],
+                },
+                102: {
+                    step: "p2p",
+                    state: "",
+                    logs: [
+                        {
+                            event: "2026-02-11T12:16:38.500Z: gathering state change: gathering",
+                            level: "info",
+                        },
+                        {
+                            event: "2026-02-11T12:16:38.920Z: connection state change: connected",
+                            level: "info",
+                        },
+                    ],
+                },
+            },
+        },
+    },
+    snapshots: {},
+};
 
 let Root;
 let LogPlugin;
@@ -122,6 +169,22 @@ describe("RTC Log Viewer UI", () => {
         expect(
             document.querySelector(".timelines-container .no-data"),
         ).not.toBeNull();
+
+        root.destroy();
+        await flush(app);
+    });
+
+    test("cockpit counts all p2p connect samples in one timeline", async () => {
+        const { app, root } = await createApp({ Root, plugins: [LogPlugin] });
+        const log = app.pluginManager.getPlugin(LogPlugin);
+
+        log.load(multiP2pSamplesData);
+        await waitForSelector(app, ".incident-cockpit .trend-card");
+
+        const p2pHeading = getByText(".trend-card h5", "P2P Connect");
+        const p2pCard = p2pHeading.closest(".trend-card");
+        expect(p2pCard).not.toBeNull();
+        expect(p2pCard.textContent).toContain("2 samples");
 
         root.destroy();
         await flush(app);
